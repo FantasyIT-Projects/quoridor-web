@@ -3,8 +3,8 @@
         <div v-for="row in 9" :key="row" class="row">
             <div v-for="column in 9" :key="column" class="column">
                 <div style="display: flex">
-                    <div class="cell" :ref="(9-row)+','+(column-1)" @click.prevent="judgeChess(9 - row, column - 1)">
-                        <div class="chess"></div>
+                    <div class="cell" :ref="(column-1)+','+(9-row)" @click.prevent="judgeChess(9 - row, column - 1)">
+<!--                        <div class="chess" :ref="'chess'+(column-1)+','+(9-row)"></div>-->
                     </div>
                     <div class="column-gap" v-if="column !== 9" @click.prevent="judgeWall('right', 9 - row, column - 1)"></div>
                 </div>
@@ -23,7 +23,15 @@ export default {
     data() {
         return {
             columnNo: 'ABCDEFGHI',
-            players: [],
+            players: [
+                {
+                    name: 'ChiyukiRuon',
+                    id: 1,
+                    metadata: {
+                        head: 'https://chiyukiruon.com/images/arimakana.JPG'
+                    }
+                }
+            ],
             ops: [
                 {
                     player: 1,
@@ -39,19 +47,27 @@ export default {
                         [4,8]
                     ]
                 }
-            ]
+            ],
+            status: {
+                currentPlayer: 1,
+                playersPos: {},
+                wallPos: [],
+            },
         }
     },
     methods: {
         /**
-         * 判断是否能够落子
+         * 判断当前格子是否能够落子
          *
          * @param {Number} rowIndex Y坐标
          * @param {Number} columnIndex X坐标
          * @return void
+         * @author ChiyukiRuon
          * */
         judgeChess(rowIndex, columnIndex) {
             console.log(`click at (${columnIndex}, ${rowIndex})`)
+
+            this.updateChessPos(1, [columnIndex, rowIndex])
         },
 
         /**
@@ -61,6 +77,7 @@ export default {
          * @param {Number} rowIndex Y坐标
          * @param {Number} columnIndex X坐标
          * @return void
+         * @author ChiyukiRuon
          * */
         judgeWall(position, rowIndex, columnIndex) {
             let startX,startY,endX,endY
@@ -90,12 +107,43 @@ export default {
             }
 
             console.log(`wall set (${startX},${startY}) to (${endX},${endY})`)
+        },
+
+        /**
+         * 更新棋子位置
+         *
+         * @param {Number} id 玩家ID
+         * @param {Array} xy 新棋子XY
+         * @return void
+         * @author ChiyukiRuon
+         * */
+        updateChessPos(id, xy) {
+            const container = this.$refs[xy]
+            let chessDiv
+
+            if (container[0]) {
+                chessDiv = document.createElement('div')
+                chessDiv.className = 'chess'
+                chessDiv.style.backgroundImage = `url('${this.players[0].metadata.head}')`
+                container[0].appendChild(chessDiv)
+            }
+
+            if (this.status.playersPos[id]) this.status.playersPos[id].remove()
+
+            this.status.playersPos[id] = chessDiv
         }
     },
     mounted() {
         this.$nextTick(() => {
-            const s = '1,1'
-            console.log(this.$refs[s])
+            for (let i = 0; i < this.ops.length; i++) {
+                if (this.ops[i].type === 'CHESS') {
+                    this.updateChessPos(this.ops[i].player, this.ops[i].position)
+                }
+            }
+
+            setTimeout(() => {
+                this.updateChessPos(1, [4,1])
+            }, 1000)
         })
     }
 }
@@ -142,11 +190,14 @@ export default {
     width: var(--gap-size);
     height: var(--gap-size);
 }
+</style>
 
+<style>
 .chess {
     width: var(--chess-size);
     height: var(--chess-size);
     border: 1px solid;
     border-radius: 100%;
+    background-size: var(--chess-size);
 }
 </style>
