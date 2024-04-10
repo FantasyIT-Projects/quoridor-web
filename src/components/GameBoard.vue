@@ -4,31 +4,28 @@
             <div v-for="column in 9" :key="column" class="column">
                 <div style="display: flex">
                     <div v-if="column === 1" class="number">{{ 10 - row }}</div>
-                    <div class="cell" :ref="(column-1)+','+(9-row)"
-                         @click.prevent="moveChess(column - 1, 9 - row)"
-                         @mouseover="mouseOnSquare(column - 1, 9 - row)"
-                         @mouseleave="mouseLeaveSquare(column - 1, 9 - row)"
-                    ></div>
+                    <div class="cell" :ref="(column - 1) + ',' + (9 - row)"
+                        @click.prevent="moveChess(column - 1, 9 - row)" @mouseover="mouseOnSquare(column - 1, 9 - row)"
+                        @mouseleave="mouseLeaveSquare(column - 1, 9 - row)"></div>
                     <div class="column-gap" v-if="column !== 9"
-                         :ref="(column)+','+(9 - row)+'to'+(column)+','+(10 - row)"
-                         @mouseover="mouseOnGap('right', column - 1, 9 - row)"
-                         @mouseleave="mouseLeaveGap('right', column - 1, 9 - row)"
-                         @click.prevent="setWall('right', column - 1, 9 - row)"
-                    ></div>
+                        :ref="(column) + ',' + (9 - row) + 'to' + (column) + ',' + (10 - row)"
+                        @mouseover="mouseOnGap('right', column - 1, 9 - row)"
+                        @mouseleave="mouseLeaveGap('right', column - 1, 9 - row)"
+                        @click.prevent="setWall('right', column - 1, 9 - row)"></div>
                 </div>
                 <div style="display: flex; justify-content: flex-end">
                     <div class="row-gap" v-if="row !== 9"
-                         :ref="(column - 1)+','+(9 - row)+'to'+(column)+','+(9 - row)"
-                         @mouseover="mouseOnGap('bottom', column - 1, 9 - row)"
-                         @mouseleave="mouseLeaveGap('bottom', column - 1, 9 - row)"
-                         @click.prevent="setWall('bottom', column - 1, 9 - row)"
-                    ></div>
-                    <div class="cross" v-if="row !== 9 && column !== 9"
-                         :ref="'cross'+(column)+','+(9 - row)"
-                    ></div>
+                        :ref="(column - 1) + ',' + (9 - row) + 'to' + (column) + ',' + (9 - row)"
+                        @mouseover="mouseOnGap('bottom', column - 1, 9 - row)"
+                        @mouseleave="mouseLeaveGap('bottom', column - 1, 9 - row)"
+                        @click.prevent="setWall('bottom', column - 1, 9 - row)"></div>
+                    <div class="cross" v-if="row !== 9 && column !== 9" :ref="'cross' + (column) + ',' + (9 - row)">
+                    </div>
                 </div>
-                <div v-if="row === 9 && column !== 9" class="number" style="float: right; margin-right: 25px">{{ columnNo[column - 1] }}</div>
-                <div v-if="row === 9 && column === 9" class="number" style="float: right; margin-right: 15px">{{ columnNo[column - 1] }}</div>
+                <div v-if="row === 9 && column !== 9" class="number" style="float: right; margin-right: 25px">{{
+            columnNo[column - 1] }}</div>
+                <div v-if="row === 9 && column === 9" class="number" style="float: right; margin-right: 15px">{{
+            columnNo[column - 1] }}</div>
             </div>
         </div>
     </div>
@@ -74,14 +71,14 @@ export default {
                     player: 0,
                     type: "CHESS",
                     position: [
-                        [4,0]
+                        [4, 0]
                     ]
                 },
                 {
                     player: 1,
                     type: "CHESS",
                     position: [
-                        [4,8]
+                        [4, 8]
                     ]
                 }
             ],
@@ -215,7 +212,7 @@ export default {
         moveChess(x, y) {
             if (this.judgeChess(x, y)) {
                 this.updateChessPos(this.status.currentPlayer, [x, y], this.players[this.status.currentPlayer])
-                this.status.currentPlayer = this.status.currentPlayer === 1?0:1
+                this.status.currentPlayer = this.status.currentPlayer === 1 ? 0 : 1
             }
         },
 
@@ -229,24 +226,24 @@ export default {
          * @author ChiyukiRuon
          * */
         calcWall(position, x, y) {
-            let startX,startY,endX,endY
+            let startX, startY, endX, endY
 
             if (position === 'right') {
                 if (y === 8) {
                     startY = y - 1
                     endY = y + 1
-                }else {
+                } else {
                     startY = y
                     endY = y + 2
                 }
 
                 startX = x + 1
                 endX = x + 1
-            }else {
+            } else {
                 if (x === 8) {
                     startX = x - 1
                     endX = x + 1
-                }else {
+                } else {
                     startX = x
                     endX = x + 2
                 }
@@ -268,7 +265,7 @@ export default {
          * @return {Boolean} 能否建墙
          * @author ChiyukiRuon
          * */
-        judgeWall(startX,startY,endX,endY) {
+        judgeWall(startX, startY, endX, endY) {
             startX = startX * 2
             startY = startY * 2
             endX = endX * 2
@@ -277,10 +274,10 @@ export default {
             let allTrue = true
             for (let i = startX; i <= endX; i++) {
                 for (let j = startY; j <= endY; j++) {
-                     if (this.status.gameBoard[i][j] === -1) {
-                         allTrue = false
-                         break
-                     }
+                    if (this.status.gameBoard[i][j] === -1) {
+                        allTrue = false
+                        break
+                    }
                 }
 
                 if (!allTrue) break
@@ -298,13 +295,16 @@ export default {
             }
 
             if (startX === endX) {
-                if (this.status.gameBoard[startX + 1][startY + 2] !== -1 && this.status.gameBoard[startX - 1][startY + 2] !== -1) {
-                    return false
+                for (let i = startY + 1; i <= endY - 1; i++) {
+                    if (this.status.gameBoard[startX][i] !== -1) {
+                        return false
+                    }
                 }
-            }
-            if (startY === endY) {
-                if (this.status.gameBoard[startX + 2][startY - 1] !== -1 && this.status.gameBoard[startX + 2][startY + 1] !== -1) {
-                    return false
+            } else if (startY === endY) {
+                for (let i = startX + 1; i <= endX - 1; i++) {
+                    if (this.status.gameBoard[i][startY] !== -1) {
+                        return false
+                    }
                 }
             }
 
@@ -327,7 +327,7 @@ export default {
             if (this.judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1])) {
                 const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
 
-                const wall1 = this.$refs[[[pos[0][0]],[pos[0][1]]] + 'to' + crossPos][0]
+                const wall1 = this.$refs[[[pos[0][0]], [pos[0][1]]] + 'to' + crossPos][0]
                 const wall2 = this.$refs[crossPos + 'to' + [pos[1][0], pos[1][1]]][0]
                 const cross = this.$refs['cross' + crossPos][0]
 
@@ -335,7 +335,7 @@ export default {
                 if (position === 'right') {
                     wall1.className = 'column-gap preview-wall'
                     wall2.className = 'column-gap preview-wall'
-                }else {
+                } else {
                     wall1.className = 'row-gap preview-wall'
                     wall2.className = 'row-gap preview-wall'
                 }
@@ -356,7 +356,7 @@ export default {
 
             const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
 
-            const wall1 = this.$refs[[[pos[0][0]],[pos[0][1]]] + 'to' + crossPos][0]
+            const wall1 = this.$refs[[[pos[0][0]], [pos[0][1]]] + 'to' + crossPos][0]
             const wall2 = this.$refs[crossPos + 'to' + [pos[1][0], pos[1][1]]][0]
             const cross = this.$refs['cross' + crossPos][0]
 
@@ -364,11 +364,11 @@ export default {
                 cross.className = 'cross'
             }
             if (position === 'right') {
-                wall1.className = wall1.className.split(' ').includes('wall')?wall1.className:'column-gap'
-                wall2.className = wall2.className.split(' ').includes('wall')?wall2.className:'column-gap'
-            }else {
-                wall1.className = wall1.className.split(' ').includes('wall')?wall1.className:'row-gap'
-                wall2.className = wall2.className.split(' ').includes('wall')?wall2.className:'row-gap'
+                wall1.className = wall1.className.split(' ').includes('wall') ? wall1.className : 'column-gap'
+                wall2.className = wall2.className.split(' ').includes('wall') ? wall2.className : 'column-gap'
+            } else {
+                wall1.className = wall1.className.split(' ').includes('wall') ? wall1.className : 'row-gap'
+                wall2.className = wall2.className.split(' ').includes('wall') ? wall2.className : 'row-gap'
             }
         },
 
@@ -387,7 +387,7 @@ export default {
             if (this.judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1])) {
                 const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
 
-                const wall1 = this.$refs[[[pos[0][0]],[pos[0][1]]] + 'to' + crossPos][0]
+                const wall1 = this.$refs[[[pos[0][0]], [pos[0][1]]] + 'to' + crossPos][0]
                 const wall2 = this.$refs[crossPos + 'to' + [pos[1][0], pos[1][1]]][0]
                 const cross = this.$refs['cross' + crossPos][0]
 
@@ -395,19 +395,23 @@ export default {
                 if (position === 'right') {
                     wall1.className = 'column-gap wall'
                     wall2.className = 'column-gap wall'
-                }else {
+                } else {
                     wall1.className = 'row-gap wall'
                     wall2.className = 'row-gap wall'
                 }
 
-                const startX = pos[0][0] * 2;
-                const startY = pos[0][1] * 2;
-                const endX = pos[1][0] * 2;
-                const endY = pos[1][1] * 2;
-                for (let i = startX; i <= endX; i++) {
-                    for (let j = startY; j <= endY; j++) {
-                        console.log(`wall on (${i},${j})`)
-                        this.status.gameBoard[i][j] = 1;
+                let startX = pos[0][0] * 2;
+                let startY = pos[0][1] * 2;
+                let endX = pos[1][0] * 2;
+                let endY = pos[1][1] * 2;
+
+                if (startX === endX) {
+                    for (let i = startY + 1; i <= endY - 1; i++) {
+                        this.status.gameBoard[startX][i] = 1;
+                    }
+                } else if (startY === endY) {
+                    for (let i = startX + 1; i <= endX - 1; i++) {
+                        this.status.gameBoard[i][startY] = 1;
                     }
                 }
 
@@ -455,7 +459,7 @@ export default {
 }
 
 .column {
-    //display: flex;
+    /*display: flex;*/
 }
 
 .cell {
