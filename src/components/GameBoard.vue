@@ -32,11 +32,14 @@
 </template>
 
 <script>
+import { calcWall, isWallBetween, judgeWall } from '@/utils/gameBoard.js'
+
 export default {
     name: 'GameBoard',
     watch: {
         'status.currentPlayer': {
             handler(newVal, oldVal) {
+                this.game.current += 1
                 const currentPlayer = document.getElementById(newVal)
                 const prePlayer = document.getElementById(oldVal)
 
@@ -64,6 +67,14 @@ export default {
                     metadata: {
                         head: 'https://q1.qlogo.cn/g?b=qq&nk=2952795729&s=100'
                     }
+                },
+                {
+                    name: 'ᗜ` v ´ᗜ',
+                    id: 3,
+                    ingame: 2,
+                    metadata: {
+                        head: 'https://q1.qlogo.cn/g?b=qq&nk=249274899&s=100'
+                    }
                 }
             ],
             ops: [
@@ -80,13 +91,65 @@ export default {
                     position: [
                         [4, 8]
                     ]
-                }
+                },
+                {
+                    player: 2,
+                    type: "CHESS",
+                    position: [
+                        [0, 4]
+                    ]
+                },
             ],
             status: {
                 currentPlayer: 1,
                 gameBoard: [],
                 playersPos: {},
-                wallPos: [],
+                currentPos: [],
+            },
+            game: {
+                roomId: '',
+                current: 0,
+                players: [
+                    {
+                        name: 'ChiyukiRuon',
+                        id: 1,
+                        ingame: 0,
+                        metadata: {
+                            head: 'https://chiyukiruon.com/images/arimakana.JPG'
+                        }
+                    },
+                    {
+                        name: 'xypp',
+                        id: 2,
+                        ingame: 1,
+                        metadata: {
+                            head: 'https://q1.qlogo.cn/g?b=qq&nk=2952795729&s=100'
+                        }
+                    },
+                    {
+                        name: 'ᗜ` v ´ᗜ',
+                        id: 3,
+                        ingame: 2,
+                        metadata: {
+                            head: 'https://q1.qlogo.cn/g?b=qq&nk=249274899&s=100'
+                        }
+                    }
+                ],
+                chesses: [
+                    {
+                        position: [[4, 0]],
+                        player: 0
+                    },
+                    {
+                        position: [[4, 8]],
+                        player: 1
+                    },
+                    {
+                        position: [[0, 4]],
+                        player: 2
+                    }
+                ],
+                walls: [],
             },
         }
     },
@@ -114,17 +177,42 @@ export default {
             for (const [dx, dy] of directions) {
                 let x = columnIndex + dx
                 let y = rowIndex + dy
+                let num = 0 // 记录当前方向上对手棋子的数量，超过两个不能落子
 
                 // 沿当前方向查找是否有棋子
-                while (x >= 0 && x < 9 && y >= 0 && y < 9) {
+                while (x >= 0 && x < 9 && y >= 0 && y < 9 && num < 2) {
                     if (this.$refs[[x, y]][0].children.length === 0) {
                         // 如果遇到空格，跳出循环继续检查下一个方向
                         break
                     } else if (this.$refs[[x, y]][0].children[0] === this.status.playersPos[this.status.currentPlayer]) {
-                        // 如果遇到当前玩家的棋子，则说明可以落子
-                        return true
+                        // 如果遇到当前玩家的棋子，且中间没有墙则说明可以落子
+                        return !isWallBetween(x, y, columnIndex, rowIndex, this.status.gameBoard);
                     } else {
                         // 如果遇到对手的棋子，则沿当前方向继续查找
+
+                        // 不能连续跳过两位玩家
+                        num += 1
+                        if (num === 2) break
+
+                        // 若当前玩家与其它玩家相邻且跳过棋子的后方是墙，且两侧没有墙，则可以跳到相邻玩家两侧的位置
+                        let ax, ay, bx, by
+                        if (dy === 0) {
+                            ax = x
+                            ay = y - 1
+                            bx = x
+                            by = y + 1
+                        }else {
+                            ax = x - 1
+                            ay = y
+                            bx = x + 1
+                            by = y
+                        }
+                        if (this.$refs[[ax, ay]][0].children[0] === this.status.playersPos[this.status.currentPlayer] && isWallBetween(bx, by, x, y, this.status.gameBoard)) {
+                            if (!isWallBetween(columnIndex, rowIndex, x, y, this.status.gameBoard)) return true
+                        }else if (this.$refs[[bx, by]][0].children[0] === this.status.playersPos[this.status.currentPlayer] && isWallBetween(ax, ay, x, y, this.status.gameBoard)) {
+                            if (!isWallBetween(columnIndex, rowIndex, x, y, this.status.gameBoard)) return true
+                        }
+
                         x += dx
                         y += dy
                     }
@@ -212,103 +300,10 @@ export default {
         moveChess(x, y) {
             if (this.judgeChess(x, y)) {
                 this.updateChessPos(this.status.currentPlayer, [x, y], this.players[this.status.currentPlayer])
-                this.status.currentPlayer = this.status.currentPlayer === 1 ? 0 : 1
+
+                // TODO 本地调试用
+                this.status.currentPlayer = this.game.current % this.game.players.length
             }
-        },
-
-        /**
-         * 计算墙的起始坐标与终点坐标
-         *
-         * @param {String} position 墙相对于棋子坐标系的位置
-         * @param {Number} x X坐标
-         * @param {Number} y Y坐标
-         * @return {Array} 起始坐标与终点坐标
-         * @author ChiyukiRuon
-         * */
-        calcWall(position, x, y) {
-            let startX, startY, endX, endY
-
-            if (position === 'right') {
-                if (y === 8) {
-                    startY = y - 1
-                    endY = y + 1
-                } else {
-                    startY = y
-                    endY = y + 2
-                }
-
-                startX = x + 1
-                endX = x + 1
-            } else {
-                if (x === 8) {
-                    startX = x - 1
-                    endX = x + 1
-                } else {
-                    startX = x
-                    endX = x + 2
-                }
-
-                startY = y
-                endY = y
-            }
-
-            return [[startX, startY], [endX, endY]]
-        },
-
-        /**
-         * 判断是否能建墙
-         *
-         * @param {Number} startX 墙的起始X坐标
-         * @param {Number} startY 墙的起始Y坐标
-         * @param {Number} endX 墙的终点X坐标
-         * @param {Number} endY 墙的终点Y坐标
-         * @return {Boolean} 能否建墙
-         * @author ChiyukiRuon
-         * */
-        judgeWall(startX, startY, endX, endY) {
-            startX = startX * 2
-            startY = startY * 2
-            endX = endX * 2
-            endY = endY * 2
-
-            let allTrue = true
-            for (let i = startX; i <= endX; i++) {
-                for (let j = startY; j <= endY; j++) {
-                    if (this.status.gameBoard[i][j] === -1) {
-                        allTrue = false
-                        break
-                    }
-                }
-
-                if (!allTrue) break
-            }
-
-            if (allTrue) return false
-
-            //墙条件1：长度必须为2
-            if (endX - startX + endY - startY !== 2 * 2) {
-                return false
-            }
-            //墙条件2：平行于x or y
-            if (!(startX === endX || startY === endY)) {
-                return false
-            }
-
-            if (startX === endX) {
-                for (let i = startY + 1; i <= endY - 1; i++) {
-                    if (this.status.gameBoard[startX][i] !== -1) {
-                        return false
-                    }
-                }
-            } else if (startY === endY) {
-                for (let i = startX + 1; i <= endX - 1; i++) {
-                    if (this.status.gameBoard[i][startY] !== -1) {
-                        return false
-                    }
-                }
-            }
-
-            return true
         },
 
         /**
@@ -321,10 +316,10 @@ export default {
          * @author ChiyukiRuon
          * */
         mouseOnGap(position, x, y) {
-            const pos = this.calcWall(position, x, y)
+            const pos = calcWall(position, x, y)
 
-            console.log(this.judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1]), pos)
-            if (this.judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1])) {
+            // console.log(this.judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1]), pos)
+            if (judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1], this.status.gameBoard)) {
                 const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
 
                 const wall1 = this.$refs[[[pos[0][0]], [pos[0][1]]] + 'to' + crossPos][0]
@@ -352,7 +347,7 @@ export default {
          * @author ChiyukiRuon
          * */
         mouseLeaveGap(position, x, y) {
-            const pos = this.calcWall(position, x, y)
+            const pos = calcWall(position, x, y)
 
             const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
 
@@ -382,9 +377,9 @@ export default {
          * @author ChiyukiRuon
          * */
         setWall(position, x, y) {
-            const pos = this.calcWall(position, x, y)
+            const pos = calcWall(position, x, y)
 
-            if (this.judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1])) {
+            if (judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1], this.status.gameBoard)) {
                 const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
 
                 const wall1 = this.$refs[[[pos[0][0]], [pos[0][1]]] + 'to' + crossPos][0]
@@ -400,22 +395,22 @@ export default {
                     wall2.className = 'row-gap wall'
                 }
 
-                let startX = pos[0][0] * 2;
-                let startY = pos[0][1] * 2;
-                let endX = pos[1][0] * 2;
-                let endY = pos[1][1] * 2;
+                let startX = pos[0][0] * 2
+                let startY = pos[0][1] * 2
+                let endX = pos[1][0] * 2
+                let endY = pos[1][1] * 2
 
                 if (startX === endX) {
                     for (let i = startY + 1; i <= endY - 1; i++) {
-                        this.status.gameBoard[startX][i] = 1;
+                        this.status.gameBoard[startX][i] = 1
                     }
                 } else if (startY === endY) {
                     for (let i = startX + 1; i <= endX - 1; i++) {
-                        this.status.gameBoard[i][startY] = 1;
+                        this.status.gameBoard[i][startY] = 1
                     }
                 }
 
-                console.log(this.status.gameBoard)
+                this.status.currentPlayer = this.game.current % this.game.players.length
             }
         },
     },
@@ -436,6 +431,7 @@ export default {
                 }
             }
 
+            this.status.currentPlayer = this.game.current % this.game.players.length
             const currentPlayer = document.getElementById(this.status.currentPlayer)
             if (currentPlayer) {
                 currentPlayer.className = 'chess current-player'
