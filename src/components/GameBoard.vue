@@ -1,5 +1,5 @@
 <template>
-    <div class="board">
+    <div class="board" :key="refresh">
         <div v-for="row in 9" :key="row" class="row">
             <div v-for="column in 9" :key="column" class="column">
                 <div style="display: flex">
@@ -37,120 +37,53 @@ import { calcWall, isWallBetween, judgeWall } from '@/utils/gameBoard.js'
 export default {
     name: 'GameBoard',
     watch: {
-        'status.currentPlayer': {
+        'game.chesses': {
+            handler() {
+                for (let i = 0; i < this.game.chesses.length; i++) {
+                    this.updateChessPos(this.game.chesses[i].player, this.game.chesses[i].position, this.game.players[i])
+                }
+            },
+            deep: true
+        },
+        'game.current': {
             handler(newVal, oldVal) {
-                this.game.current += 1
+                if (this.status.current < 0) {
+                    this.status.current += 1
+                }
                 const currentPlayer = document.getElementById(newVal)
                 const prePlayer = document.getElementById(oldVal)
 
                 prePlayer.className = 'chess'
                 currentPlayer.className = 'chess current-player'
-            },
-        }
+            }
+        },
+        'lastOp': {
+            handler(newVal) {
+                if (newVal.type === 'chess') {
+                    this.updateChessPos(this.lastOp.player, this.lastOp.position, this.game.players[this.lastOp.player])
+                }
+            }
+        },
+    },
+    props: {
+        refresh: {
+            type: Number,
+            default: 0
+        },
+        game: {},
+        lastOp: {},
     },
     data() {
         return {
             columnNo: 'ABCDEFGHI',
-            players: [
-                {
-                    name: 'ChiyukiRuon',
-                    id: 1,
-                    ingame: 0,
-                    metadata: {
-                        head: 'https://chiyukiruon.com/images/arimakana.JPG'
-                    }
-                },
-                {
-                    name: 'xypp',
-                    id: 2,
-                    ingame: 1,
-                    metadata: {
-                        head: 'https://q1.qlogo.cn/g?b=qq&nk=2952795729&s=100'
-                    }
-                },
-                {
-                    name: 'ᗜ` v ´ᗜ',
-                    id: 3,
-                    ingame: 2,
-                    metadata: {
-                        head: 'https://q1.qlogo.cn/g?b=qq&nk=249274899&s=100'
-                    }
-                }
-            ],
-            ops: [
-                {
-                    player: 0,
-                    type: "CHESS",
-                    position: [
-                        [4, 0]
-                    ]
-                },
-                {
-                    player: 1,
-                    type: "CHESS",
-                    position: [
-                        [4, 8]
-                    ]
-                },
-                {
-                    player: 2,
-                    type: "CHESS",
-                    position: [
-                        [0, 4]
-                    ]
-                },
-            ],
+            userInfo: {},
             status: {
-                currentPlayer: 1,
+                current: -1,
                 gameBoard: [],
                 playersPos: {},
                 currentPos: [],
             },
-            game: {
-                roomId: '',
-                current: 0,
-                players: [
-                    {
-                        name: 'ChiyukiRuon',
-                        id: 1,
-                        ingame: 0,
-                        metadata: {
-                            head: 'https://chiyukiruon.com/images/arimakana.JPG'
-                        }
-                    },
-                    {
-                        name: 'xypp',
-                        id: 2,
-                        ingame: 1,
-                        metadata: {
-                            head: 'https://q1.qlogo.cn/g?b=qq&nk=2952795729&s=100'
-                        }
-                    },
-                    {
-                        name: 'ᗜ` v ´ᗜ',
-                        id: 3,
-                        ingame: 2,
-                        metadata: {
-                            head: 'https://q1.qlogo.cn/g?b=qq&nk=249274899&s=100'
-                        }
-                    }
-                ],
-                chesses: [
-                    {
-                        position: [[4, 0]],
-                        player: 0
-                    },
-                    {
-                        position: [[4, 8]],
-                        player: 1
-                    },
-                    {
-                        position: [[0, 4]],
-                        player: 2
-                    }
-                ],
-                walls: [],
-            },
+
         }
     },
     methods: {
@@ -163,7 +96,12 @@ export default {
          * @author ChiyukiRuon
          * */
         judgeChess(columnIndex, rowIndex) {
+            if (Object.keys(this.game).length === 0) return false
+
             const currentSquare = this.$refs[[columnIndex, rowIndex]][0].children
+
+            // 判断是否轮到当前玩家
+            if (this.userInfo.id !== this.game.players[this.game.current].id) return false
 
             // 判断当前格子是否已经有棋子
             if (currentSquare.length === 1) {
@@ -184,7 +122,7 @@ export default {
                     if (this.$refs[[x, y]][0].children.length === 0) {
                         // 如果遇到空格，跳出循环继续检查下一个方向
                         break
-                    } else if (this.$refs[[x, y]][0].children[0] === this.status.playersPos[this.status.currentPlayer]) {
+                    } else if (this.$refs[[x, y]][0].children[0] === this.status.playersPos[this.game.current]) {
                         // 如果遇到当前玩家的棋子，且中间没有墙则说明可以落子
                         return !isWallBetween(x, y, columnIndex, rowIndex, this.status.gameBoard);
                     } else {
@@ -207,9 +145,9 @@ export default {
                             bx = x + 1
                             by = y
                         }
-                        if (this.$refs[[ax, ay]][0].children[0] === this.status.playersPos[this.status.currentPlayer] && isWallBetween(bx, by, x, y, this.status.gameBoard)) {
+                        if (this.$refs[[ax, ay]][0].children[0] === this.status.playersPos[this.game.current] && isWallBetween(bx, by, x, y, this.status.gameBoard)) {
                             if (!isWallBetween(columnIndex, rowIndex, x, y, this.status.gameBoard)) return true
-                        }else if (this.$refs[[bx, by]][0].children[0] === this.status.playersPos[this.status.currentPlayer] && isWallBetween(ax, ay, x, y, this.status.gameBoard)) {
+                        }else if (this.$refs[[bx, by]][0].children[0] === this.status.playersPos[this.game.current] && isWallBetween(ax, ay, x, y, this.status.gameBoard)) {
                             if (!isWallBetween(columnIndex, rowIndex, x, y, this.status.gameBoard)) return true
                         }
 
@@ -240,7 +178,7 @@ export default {
                     chessDiv = document.createElement('div')
                     chessDiv.id = 'preview'
                     chessDiv.className = 'preview-chess'
-                    chessDiv.style.backgroundImage = `url('${this.players[this.status.currentPlayer].metadata.head}')`
+                    chessDiv.style.backgroundImage = `url('${this.game.players[this.game.current].metadata.head}')`
                     container[0].appendChild(chessDiv)
                 }
             }
@@ -278,7 +216,7 @@ export default {
             if (container[0]) {
                 if (container[0].children.length !== 0) container[0].children[0].remove()
                 chessDiv = document.createElement('div')
-                chessDiv.id = player.ingame
+                chessDiv.id = id.toString()
                 chessDiv.className = 'chess'
                 chessDiv.style.backgroundImage = `url('${player.metadata.head}')`
                 container[0].appendChild(chessDiv)
@@ -299,10 +237,14 @@ export default {
          * */
         moveChess(x, y) {
             if (this.judgeChess(x, y)) {
-                this.updateChessPos(this.status.currentPlayer, [x, y], this.players[this.status.currentPlayer])
+                this.updateChessPos(this.game.current, [x, y], this.game.players[this.game.current])
 
                 // TODO 本地调试用
                 this.status.currentPlayer = this.game.current % this.game.players.length
+                this.$attrs.wss.send(JSON.stringify({
+                    'type': 'chess',
+                    'position': [x, y]
+                }))
             }
         },
 
@@ -318,7 +260,7 @@ export default {
         mouseOnGap(position, x, y) {
             const pos = calcWall(position, x, y)
 
-            // console.log(this.judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1]), pos)
+            if (Object.keys(this.game).length === 0) return
             if (judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1], this.status.gameBoard)) {
                 const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
 
@@ -422,19 +364,21 @@ export default {
                 this.status.gameBoard[i].push(-1);
             }
         }
+
+        this.userInfo = JSON.parse(localStorage.getItem('UserInfo'))
     },
     mounted() {
         this.$nextTick(() => {
-            for (let i = 0; i < this.ops.length; i++) {
-                if (this.ops[i].type === 'CHESS') {
-                    this.updateChessPos(this.ops[i].player, this.ops[i].position, this.players[i])
+            if (Object.keys(this.game).length !== 0) {
+                for (let i = 0; i < this.game.chesses.length; i++) {
+                    this.updateChessPos(this.game.chesses[i].player, this.game.chesses[i].position, this.game.players[i])
                 }
-            }
 
-            this.status.currentPlayer = this.game.current % this.game.players.length
-            const currentPlayer = document.getElementById(this.status.currentPlayer)
-            if (currentPlayer) {
-                currentPlayer.className = 'chess current-player'
+                this.status.currentPlayer = this.game.current % this.game.players.length
+                const currentPlayer = document.getElementById(this.status.currentPlayer)
+                if (currentPlayer) {
+                    currentPlayer.className = 'chess current-player'
+                }
             }
         })
     }
@@ -445,7 +389,7 @@ export default {
 .board {
     padding: 20px;
     border-radius: 20px;
-    background-color: #B0A092;
+    background-color: var(--border-bg-color);
 }
 
 .row {
@@ -462,7 +406,7 @@ export default {
     width: var(--cell-size);
     height: var(--cell-size);
     border-radius: 5px;
-    background-color: #A18E80;
+    background-color: var(--square-color);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -477,7 +421,7 @@ export default {
     align-items: center;
     font-size: large;
     font-weight: bold;
-    color: #534B44;
+    color: var(--font-color-on-bg);
 }
 
 .column-gap {

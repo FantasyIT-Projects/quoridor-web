@@ -40,6 +40,10 @@
   --cell-size: 50px;
   --gap-size: 10px;
   --chess-size: 40px;
+
+  --border-bg-color: #B0A092;
+  --square-color: #A18E80;
+  --font-color-on-bg: #534B44;
 }
 
 @media (prefers-color-scheme: dark) {
