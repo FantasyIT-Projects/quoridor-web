@@ -55,7 +55,7 @@ export default {
         if (localStorage.getItem('UserInfo')) {
             this.userInfo = JSON.parse(localStorage.getItem('UserInfo'))
             this.showUserView = false
-            this.wss = new WebSocket('ws://127.0.0.1:19981');
+            this.wss = new WebSocket('ws://zxy19.e2.luyouxia.net:20307');
 
             this.wss.onopen = () => {
                 console.info('WebSocket连接已建立')

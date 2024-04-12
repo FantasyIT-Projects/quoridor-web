@@ -45,22 +45,53 @@ export default {
             },
             deep: true
         },
-        'game.current': {
-            handler(newVal, oldVal) {
-                if (this.status.current < 0) {
-                    this.status.current += 1
-                }
-                const currentPlayer = document.getElementById(newVal)
-                const prePlayer = document.getElementById(oldVal)
-
-                prePlayer.className = 'chess'
-                currentPlayer.className = 'chess current-player'
-            }
-        },
+        // 'game.current': {
+        //     handler(newVal, oldVal) {
+        //         if (this.status.current < 0) {
+        //             this.status.current += 1
+        //         }
+        //         const currentPlayer = document.getElementById(newVal)
+        //         const prePlayer = document.getElementById(oldVal)
+        //
+        //         prePlayer.className = 'chess'
+        //         currentPlayer.className = 'chess current-player'
+        //     }
+        // },
         'lastOp': {
             handler(newVal) {
                 if (newVal.type === 'chess') {
                     this.updateChessPos(this.lastOp.player, this.lastOp.position, this.game.players[this.lastOp.player])
+                }else if (newVal.type === 'wall') {
+                    const pos = this.lastOp.position
+                    const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
+
+                    const wall1 = this.$refs[[[pos[0][0]], [pos[0][1]]] + 'to' + crossPos][0]
+                    const wall2 = this.$refs[crossPos + 'to' + [pos[1][0], pos[1][1]]][0]
+                    const cross = this.$refs['cross' + crossPos][0]
+
+                    cross.className = 'cross wall'
+                    if (pos[1][0] === pos[0][0]) {
+                        wall1.className = 'column-gap wall'
+                        wall2.className = 'column-gap wall'
+                    } else {
+                        wall1.className = 'row-gap wall'
+                        wall2.className = 'row-gap wall'
+                    }
+
+                    let startX = pos[0][0] * 2
+                    let startY = pos[0][1] * 2
+                    let endX = pos[1][0] * 2
+                    let endY = pos[1][1] * 2
+
+                    if (startX === endX) {
+                        for (let i = startY + 1; i <= endY - 1; i++) {
+                            this.status.gameBoard[startX][i] = 1
+                        }
+                    } else if (startY === endY) {
+                        for (let i = startX + 1; i <= endX - 1; i++) {
+                            this.status.gameBoard[i][startY] = 1
+                        }
+                    }
                 }
             }
         },
@@ -260,7 +291,7 @@ export default {
         mouseOnGap(position, x, y) {
             const pos = calcWall(position, x, y)
 
-            if (Object.keys(this.game).length === 0) return
+            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.game.current].id) return
             if (judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1], this.status.gameBoard)) {
                 const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
 
@@ -321,6 +352,8 @@ export default {
         setWall(position, x, y) {
             const pos = calcWall(position, x, y)
 
+            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.game.current].id) return
+
             if (judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1], this.status.gameBoard)) {
                 const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
 
@@ -353,6 +386,10 @@ export default {
                 }
 
                 this.status.currentPlayer = this.game.current % this.game.players.length
+                this.$attrs.wss.send(JSON.stringify({
+                    'type': 'wall',
+                    'position': [[pos[0][0], pos[0][1]], [pos[1][0], pos[1][1]]]
+                }))
             }
         },
     },
@@ -375,10 +412,10 @@ export default {
                 }
 
                 this.status.currentPlayer = this.game.current % this.game.players.length
-                const currentPlayer = document.getElementById(this.status.currentPlayer)
-                if (currentPlayer) {
-                    currentPlayer.className = 'chess current-player'
-                }
+                // const currentPlayer = document.getElementById(this.status.currentPlayer)
+                // if (currentPlayer) {
+                //     currentPlayer.className = 'chess current-player'
+                // }
             }
         })
     }
