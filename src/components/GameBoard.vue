@@ -2,7 +2,7 @@
     <div class="board" :key="refresh">
         <div v-for="row in 9" :key="row" class="row">
             <div v-for="column in 9" :key="column" class="column">
-                <div style="display: flex">
+                <div style="display: flex;">
                     <div v-if="column === 1" class="number">{{ 10 - row }}</div>
                     <div class="cell" :ref="(column - 1) + ',' + (9 - row)"
                         @click.prevent="moveChess(column - 1, 9 - row)" @mouseover="mouseOnSquare(column - 1, 9 - row)"
@@ -32,18 +32,47 @@
 </template>
 
 <script>
-import { calcWall, isWallBetween, judgeWall } from '@/utils/gameBoard.js'
+import {
+    calcWall,
+    isNoPathOut,
+    isWallBetween,
+    judgeWall,
+    updateChessInBoard,
+    updateWallInBoard
+} from '@/utils/gameBoard.js'
 
 export default {
     name: 'GameBoard',
     watch: {
         'game.chesses': {
             handler() {
-                for (let i = 0; i < this.game.chesses.length; i++) {
-                    this.updateChessPos(this.game.chesses[i].player, this.game.chesses[i].position, this.game.players[i])
+                console.log('update chess')
+                if (Object.keys(this.game).length === 0) return
+                if (this.game.chesses) {
+                    for (let i = 0; i < this.game.chesses.length; i++) {
+                        this.status.playerPosXY.push({start: this.game.chesses[i].position, position: []})
+                        this.updateChessPos(this.game.chesses[i].player, this.game.chesses[i].position, this.game.players[i])
+                    }
                 }
             },
             deep: true
+        },
+        'game.walls': {
+            handler() {
+                console.log('update wall')
+                if (Object.keys(this.game).length === 0) return
+                if (this.game.walls.length !== 0) {
+                    for (let i = 0; i < this.game.walls.length; i++) {
+                        const midpoints = [(this.game.walls[i].position[0][0] + this.game.walls[i].position[1][0]) / 2, (this.game.walls[i].position[0][1] + this.game.walls[i].position[1][1]) / 2]
+                        console.log(midpoints)
+                        if (this.game.walls[i].position[1][0] === this.game.walls[i].position[0][0]) {
+                            this.reConnectSetWall('right', midpoints[0] - 1, midpoints[1] - 1)
+                        } else {
+                            this.reConnectSetWall('bottom', midpoints[0] - 1, midpoints[1])
+                        }
+                    }
+                }
+            }
         },
         // 'game.current': {
         //     handler(newVal, oldVal) {
@@ -60,9 +89,10 @@ export default {
         'lastOp': {
             handler(newVal) {
                 if (newVal.type === 'chess') {
-                    this.updateChessPos(this.lastOp.player, this.lastOp.position, this.game.players[this.lastOp.player])
+                    this.updateChessPos(this.lastOp.player, this.lastOp.position[0], this.game.players[this.lastOp.player])
                 }else if (newVal.type === 'wall') {
                     const pos = this.lastOp.position
+
                     const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
 
                     const wall1 = this.$refs[[[pos[0][0]], [pos[0][1]]] + 'to' + crossPos][0]
@@ -78,20 +108,7 @@ export default {
                         wall2.className = 'row-gap wall'
                     }
 
-                    let startX = pos[0][0] * 2
-                    let startY = pos[0][1] * 2
-                    let endX = pos[1][0] * 2
-                    let endY = pos[1][1] * 2
-
-                    if (startX === endX) {
-                        for (let i = startY + 1; i <= endY - 1; i++) {
-                            this.status.gameBoard[startX][i] = 1
-                        }
-                    } else if (startY === endY) {
-                        for (let i = startX + 1; i <= endX - 1; i++) {
-                            this.status.gameBoard[i][startY] = 1
-                        }
-                    }
+                    this.status.gameBoard = updateWallInBoard(this.status.gameBoard, pos)
                 }
             }
         },
@@ -112,7 +129,7 @@ export default {
                 current: -1,
                 gameBoard: [],
                 playersPos: {},
-                currentPos: [],
+                playerPosXY: [],
             },
 
         }
@@ -176,9 +193,9 @@ export default {
                             bx = x + 1
                             by = y
                         }
-                        if (this.$refs[[ax, ay]][0].children[0] === this.status.playersPos[this.game.current] && isWallBetween(bx, by, x, y, this.status.gameBoard)) {
+                        if (this.$refs[[ax, ay]] && this.$refs[[ax, ay]][0].children[0] === this.status.playersPos[this.game.current] && isWallBetween(bx, by, x, y, this.status.gameBoard)) {
                             if (!isWallBetween(columnIndex, rowIndex, x, y, this.status.gameBoard)) return true
-                        }else if (this.$refs[[bx, by]][0].children[0] === this.status.playersPos[this.game.current] && isWallBetween(ax, ay, x, y, this.status.gameBoard)) {
+                        }else if (this.$refs[[bx, by]]  && this.$refs[[bx, by]][0].children[0] === this.status.playersPos[this.game.current] && isWallBetween(ax, ay, x, y, this.status.gameBoard)) {
                             if (!isWallBetween(columnIndex, rowIndex, x, y, this.status.gameBoard)) return true
                         }
 
@@ -244,6 +261,13 @@ export default {
             const container = this.$refs[xy]
             let chessDiv
 
+            if (this.status.playerPosXY[id].position.length !== 0) {
+                this.status.gameBoard = updateChessInBoard(id, this.status.gameBoard, xy, this.status.playerPosXY[id].position)
+            }else {
+                this.status.gameBoard = updateChessInBoard(id, this.status.gameBoard, xy)
+                this.status.playerPosXY[id].position = xy
+            }
+
             if (container[0]) {
                 if (container[0].children.length !== 0) container[0].children[0].remove()
                 chessDiv = document.createElement('div')
@@ -270,8 +294,6 @@ export default {
             if (this.judgeChess(x, y)) {
                 this.updateChessPos(this.game.current, [x, y], this.game.players[this.game.current])
 
-                // TODO 本地调试用
-                this.status.currentPlayer = this.game.current % this.game.players.length
                 this.$attrs.wss.send(JSON.stringify({
                     'type': 'chess',
                     'position': [x, y]
@@ -291,10 +313,11 @@ export default {
         mouseOnGap(position, x, y) {
             const pos = calcWall(position, x, y)
 
-            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.game.current].id) return
+            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.game.current].id || this.game.players[this.game.current].wallRest <= 0) return
             if (judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1], this.status.gameBoard)) {
-                const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
+                if (isNoPathOut(this.status.playerPosXY, this.status.gameBoard, pos)) return
 
+                const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
                 const wall1 = this.$refs[[[pos[0][0]], [pos[0][1]]] + 'to' + crossPos][0]
                 const wall2 = this.$refs[crossPos + 'to' + [pos[1][0], pos[1][1]]][0]
                 const cross = this.$refs['cross' + crossPos][0]
@@ -352,11 +375,12 @@ export default {
         setWall(position, x, y) {
             const pos = calcWall(position, x, y)
 
-            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.game.current].id) return
+            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.game.current].id || this.game.players[this.game.current].wallRest <= 0) return
 
             if (judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1], this.status.gameBoard)) {
-                const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
+                if (isNoPathOut(this.status.playerPosXY, this.status.gameBoard, pos)) return
 
+                const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
                 const wall1 = this.$refs[[[pos[0][0]], [pos[0][1]]] + 'to' + crossPos][0]
                 const wall2 = this.$refs[crossPos + 'to' + [pos[1][0], pos[1][1]]][0]
                 const cross = this.$refs['cross' + crossPos][0]
@@ -370,28 +394,43 @@ export default {
                     wall2.className = 'row-gap wall'
                 }
 
-                let startX = pos[0][0] * 2
-                let startY = pos[0][1] * 2
-                let endX = pos[1][0] * 2
-                let endY = pos[1][1] * 2
+                this.status.gameBoard = updateWallInBoard(this.status.gameBoard, pos)
 
-                if (startX === endX) {
-                    for (let i = startY + 1; i <= endY - 1; i++) {
-                        this.status.gameBoard[startX][i] = 1
-                    }
-                } else if (startY === endY) {
-                    for (let i = startX + 1; i <= endX - 1; i++) {
-                        this.status.gameBoard[i][startY] = 1
-                    }
-                }
-
-                this.status.currentPlayer = this.game.current % this.game.players.length
                 this.$attrs.wss.send(JSON.stringify({
                     'type': 'wall',
                     'position': [[pos[0][0], pos[0][1]], [pos[1][0], pos[1][1]]]
                 }))
             }
         },
+
+        /**
+         * 建墙
+         *
+         * @param {String} position 墙相对于棋子坐标系的位置
+         * @param {Number} x X坐标
+         * @param {Number} y Y坐标
+         * @return void
+         * @author ChiyukiRuon
+         * */
+        reConnectSetWall(position, x, y) {
+            const pos = calcWall(position, x, y)
+
+            const crossPos = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[1][1]) / 2]
+            const wall1 = this.$refs[[[pos[0][0]], [pos[0][1]]] + 'to' + crossPos][0]
+            const wall2 = this.$refs[crossPos + 'to' + [pos[1][0], pos[1][1]]][0]
+            const cross = this.$refs['cross' + crossPos][0]
+
+            cross.className = 'cross wall'
+            if (position === 'right') {
+                wall1.className = 'column-gap wall'
+                wall2.className = 'column-gap wall'
+            } else {
+                wall1.className = 'row-gap wall'
+                wall2.className = 'row-gap wall'
+            }
+
+            this.status.gameBoard = updateWallInBoard(this.status.gameBoard, pos)
+        }
     },
     created() {
         // 初始化棋盘每个位置上的状态
@@ -405,25 +444,28 @@ export default {
         this.userInfo = JSON.parse(localStorage.getItem('UserInfo'))
     },
     mounted() {
-        this.$nextTick(() => {
-            if (Object.keys(this.game).length !== 0) {
-                for (let i = 0; i < this.game.chesses.length; i++) {
-                    this.updateChessPos(this.game.chesses[i].player, this.game.chesses[i].position, this.game.players[i])
-                }
-
-                this.status.currentPlayer = this.game.current % this.game.players.length
-                // const currentPlayer = document.getElementById(this.status.currentPlayer)
-                // if (currentPlayer) {
-                //     currentPlayer.className = 'chess current-player'
-                // }
-            }
-        })
+        // this.$nextTick(() => {
+        //     console.log(this.game)
+        //     if (Object.keys(this.game).length !== 0) {
+        //         console.log(this.game.walls)
+        //         if (this.game.walls.length !== 0) {
+        //             for (let i = 0; i < this.game.walls.length; i++) {
+        //                 if (this.game.walls[i].position[1][0] === this.game.walls[i].position[0][0]) {
+        //                     this.setWall('right', this.game.walls[i].position[0][0], this.game.walls[i].position[0][1])
+        //                 } else {
+        //                     this.setWall('bottom', this.game.walls[i].position[0][0], this.game.walls[i].position[0][1])
+        //                 }
+        //             }
+        //         }
+        //     }
+        // })
     }
 }
 </script>
 
 <style scoped>
 .board {
+    width: 605px;
     padding: 20px;
     border-radius: 20px;
     background-color: var(--border-bg-color);

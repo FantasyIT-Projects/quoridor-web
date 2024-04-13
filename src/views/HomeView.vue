@@ -6,23 +6,25 @@ import PlayerCard from '@/components/PlayerCard.vue'
 <template>
     <div class="header">
         <div class="user-card" @click.prevent="openUserView">
-            <el-avatar :src="$attrs.userInfo.metadata.head" size="large" style="border: 2px solid #409EFF" />
+            <el-avatar :src="$attrs.userInfo.metadata.head" size="large" style="border: 2px solid #409EFF" >{{ $attrs.userInfo.name }}</el-avatar>
             <div style="margin-left: 20px">{{ $attrs.userInfo.name }}</div>
         </div>
         <div class="room-id">
             <el-form inline>
                 <el-form-item label="房间号" style="margin: 0">
-                    <el-input v-model="roomId" />
+                    <el-input v-model="roomId" :disabled="isUserInRoom" />
                 </el-form-item>
                 <el-button type="primary" style="margin-left: 10px"
+                           v-if="!isUserInRoom"
                            :disabled="!isRoomIdOK" :refresh="refresh"
                            @click="joinRoom"
                 >加入房间
                 </el-button>
             </el-form>
         </div>
-        <div>
-            <el-button type="primary" @click="getReady">准备</el-button>
+        <div style="margin-left: 10px;" v-if="isUserInRoom && Object.keys($attrs.game).length === 0">
+            <el-button type="success" @click="getReady" v-if="!isUserReady">准备</el-button>
+            <el-button type="warning" @click="getReady" v-else>取消准备</el-button>
         </div>
     </div>
     <div class="main">
@@ -32,7 +34,9 @@ import PlayerCard from '@/components/PlayerCard.vue'
                 <div class="player-list-title"><span>玩家列表 #{{ currentRoomId }}</span></div>
                 <div class="player-card-list" v-if="$attrs.player">
                     <span v-for="(player, index) in $attrs.player" :key="index">
-                        <PlayerCard :player="player" :delay="$attrs.pingResult[index]" />
+                        <PlayerCard :player="player" :delay="$attrs.pingResult[index]"
+                                    :game="$attrs.game" :in-game-id="index"
+                        />
                     </span>
                 </div>
             </div>
@@ -47,6 +51,8 @@ export default {
     data() {
         return {
             isRoomIdOK: false,
+            isUserReady: false,
+            isUserInRoom: false,
             refresh: 0,
             roomId: this.$attrs.roomId ? this.$attrs.roomId : '',
             currentRoomId: '',
@@ -83,17 +89,20 @@ export default {
 
             this.currentRoomId = this.roomId
             this.isRoomIdOK = false
+            this.isUserInRoom = true
         },
 
         getReady() {
             this.refresh += 1
+            this.isUserReady = !this.isUserReady
             this.$attrs.wss.send(JSON.stringify({
                 'type': 'ready',
-                'ready': true
+                'ready': this.isUserReady
             }))
         }
     },
     mounted() {
+        console.log(this.$attrs)
     }
 }
 </script>

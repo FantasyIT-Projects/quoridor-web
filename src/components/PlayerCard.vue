@@ -1,8 +1,10 @@
 <template>
-    <div class="player-card">
-        <el-avatar :src="player.metadata.head" :size="40" />
+    <div class="player-card" ref="player-card">
+        <div style="width: 40px; height: 40px">
+            <el-avatar :src="player.metadata.head" :size="40" >{{ player.name }}</el-avatar>
+        </div>
         <div class="player-detail">
-            <el-text size="large" tag="b" style="max-width: 150px" truncated>{{ player.name }}</el-text>
+            <el-text size="large" tag="b" style="max-width: 144px" truncated>{{ player.name }}</el-text>
             <el-text type="info">剩余墙：{{ player.wallRest?player.wallRest:0 }}</el-text>
         </div>
         <div class="player-delay">
@@ -11,8 +13,10 @@
             <el-text type="danger" v-else>{{ delay }}ms</el-text>
         </div>
         <div class="player-status">
-            <img src="../../src/assets/img/ready.png" v-if="player.ready" alt="玩家准备">
+            <img src="../../src/assets/img/ready.png" v-if="player.ready && Object.keys(game).length === 0" alt="玩家准备">
             <img src="../../src/assets/img/offline.png" v-if="player.offline" alt="玩家掉线">
+            <img src="../../src/assets/img/thinking.gif" v-if="!player.offline && inGameId === game.current" alt="玩家思考中">
+            <div v-if="!player.ready && inGameId !== game.current && !player.offline" style="width: 28px"></div>
         </div>
     </div>
 </template>
@@ -26,6 +30,24 @@ export default {
             type: Number,
             default: 0
         },
+        game: {},
+        inGameId: -1,
+    },
+    watch: {
+        'game.current': {
+            handler() {
+                if (!this.player.offline && this.inGameId === this.game.current) {
+                    this.$refs['player-card'].style.border = '2px solid #67C23A'
+                }else {
+                    this.$refs['player-card'].style.border = '2px solid rgba(0,0,0,0)'
+                }
+            }
+        }
+    },
+    mounted() {
+        if (!this.player.offline && this.inGameId === this.game.current) {
+            this.$refs['player-card'].style.border = '2px solid #67C23A'
+        }
     }
 }
 </script>
@@ -36,15 +58,16 @@ img {
 }
 
 .player-card {
-    width: 260px;
+    width: 274px;
     display: flex;
     align-items: center;
     background-color: #FFF;
+    border: 2px solid rgba(0,0,0,0);
     border-radius: 50px;
     padding-left: 10px;
     padding-top: 3px;
     padding-bottom: 3px;
-    margin: 5px;
+    margin: 4px;
 }
 
 .player-detail {

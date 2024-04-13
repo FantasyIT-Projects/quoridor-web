@@ -8,19 +8,33 @@ import HomeView from '@/views/HomeView.vue'
               :userInfo="userInfo" :wss="wss" :pingResult="pingResult"
               :player="player" :game="game" :lastOp="lastOp"
               v-bind="$attrs"
-              v-on="$emit"
               @openUserView="openUserView"
     />
     <UserView v-else
+              :wss="wss"
+              v-bind="$attrs"
               @openUserView="openUserView"
     />
+
+    <el-dialog title="游戏结束" v-model="gameOverDialog" :before-close="nextGame">
+        <div style="display: flex; justify-content: center; flex-direction: column; align-items: center;">
+            <div class="winner-avatar">
+                <el-avatar :src="winner.metadata.head" :size="80">{{ winner.name }}</el-avatar>
+            </div>
+            <div>{{ winner.name }} 是赢家</div>
+        </div>
+    </el-dialog>
 </template>
 
 <script>
+import { generateId } from '@/utils/user.js'
+
 export default {
     data() {
         return {
             showUserView: true,
+            gameOverDialog: false,
+            gameOverDialogText: "",
             userInfo: {
                 name: "",
                 id: "",
@@ -36,6 +50,8 @@ export default {
             player: [],
             game: [],
             lastOp: {},
+            winner: {},
+            rank: [],
         }
     },
     methods: {
@@ -47,15 +63,21 @@ export default {
          * @author ChiyukiRuon
          * */
         openUserView(open) {
+            if (!open) {
+                this.userInfo = JSON.parse(localStorage.getItem('UserInfo'))
+                if (this.wss === null) this.startWss()
+            }
             this.showUserView = open
-        }
-    },
-    mounted() {
-        // 创建WebSocket实例，指定WSS URL
-        if (localStorage.getItem('UserInfo')) {
-            this.userInfo = JSON.parse(localStorage.getItem('UserInfo'))
-            this.showUserView = false
-            this.wss = new WebSocket('ws://zxy19.e2.luyouxia.net:20307');
+        },
+
+        nextGame() {
+            this.game = []
+            this.gameOverDialog = false
+        },
+
+        startWss() {
+            this.wss = new WebSocket('ws://zxy19.e2.luyouxia.net:20307')
+            // this.wss = new WebSocket('ws://127.0.0.1:19981')
 
             this.wss.onopen = () => {
                 console.info('WebSocket连接已建立')
@@ -82,7 +104,22 @@ export default {
                         break
                     case 'stage':
                         this.game.current = JSON.parse(event.data).current
+                        if (JSON.parse(event.data).lastOp.type === 'wall') {
+                            this.player[JSON.parse(event.data).lastOp.player].wallRest -= 1
+                            this.game.players[JSON.parse(event.data).lastOp.player].wallRest -= 1
+                        }
                         this.lastOp = JSON.parse(event.data).lastOp
+                        break
+                    case 'won':
+                        this.winner = this.player[JSON.parse(event.data).player]
+                        this.rank = JSON.parse(event.data).rank
+                        this.gameOverDialog = true
+                        break
+                    case 'end':
+                        this.player = JSON.parse(event.data).players
+                        this.rank = JSON.parse(event.data).rank
+                        this.game = []
+                        break
                 }
             }
 
@@ -95,6 +132,14 @@ export default {
             this.wss.onerror = (error) => {
                 console.error('WebSocket错误：', error)
             }
+        }
+    },
+    mounted() {
+        if (localStorage.getItem('UserInfo')) {
+            this.userInfo = JSON.parse(localStorage.getItem('UserInfo'))
+            if (this.userInfo.id === '') this.userInfo.id = generateId(this.userInfo.name)
+            this.showUserView = false
+            this.startWss()
         }
     },
     beforeUnmount() {
@@ -111,5 +156,8 @@ export default {
 
 .side {
     margin-left: 20px;
+}
+
+.winner-avatar {
 }
 </style>

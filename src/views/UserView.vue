@@ -151,10 +151,20 @@ export default {
          * */
         openUserView() {
             const storedUserInfo = JSON.parse(localStorage.getItem('UserInfo'))
+            console.log(this.userInfo)
+
+            if (this.userInfo.id === '') {
+                this.userInfo.id = generateId(this.userInfo.name)
+            }
 
             if (!storedUserInfo || storedUserInfo.name !== this.userInfo.name || storedUserInfo.metadata.head !== this.userInfo.metadata.head) {
-                if (storedUserInfo.name !== this.userInfo.name) {
+                if (storedUserInfo && storedUserInfo.name !== this.userInfo.name) {
                     this.userInfo.id = generateId(this.userInfo.name)
+                }else if (storedUserInfo && storedUserInfo.metadata.head !== this.userInfo.metadata.head) {
+                    this.$attrs.wss.send(JSON.stringify({
+                        'type': 'metadata',
+                        'head': this.userInfo.metadata.head
+                    }))
                 }
                 localStorage.setItem('UserInfo', JSON.stringify(this.userInfo))
             }
