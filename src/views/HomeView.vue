@@ -1,6 +1,7 @@
 <script setup>
 import GameBoard from '@/components/GameBoard.vue'
 import PlayerCard from '@/components/PlayerCard.vue'
+import ChatBox from '@/components/ChatBox.vue'
 </script>
 
 <template>
@@ -40,7 +41,9 @@ import PlayerCard from '@/components/PlayerCard.vue'
                 </div>
             </div>
             <div>History</div>
-            <div>Chat</div>
+            <div>
+                <ChatBox @send="$attrs.wss.send(JSON.stringify(Object.assign({type:'msg'},$event)))"/>
+            </div>
         </div>
     </div>
 </template>

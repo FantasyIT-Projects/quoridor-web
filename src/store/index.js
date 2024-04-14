@@ -15,7 +15,9 @@ export default createStore({
             metadata: {
                 head: ""
             },
-        }
+        },
+        msgList: [],
+        playerList: [],
     },
     mutations: {
         // 在这里定义同步修改状态的方法(mutations)
@@ -33,11 +35,19 @@ export default createStore({
             state.roomId = roomId
             console.log('roomId updated', roomId)
         },
-
+        updatePlayerList(state, playerList) {
+            state.playerList = playerList
+            console.log('playerList updated', playerList)
+        },
         updateUserInfo(state, userInfo) {
             state.userInfo = userInfo
             console.log('userInfo updated', userInfo)
-        }
+        },
+
+        addMsg(state, msgItem) {
+            state.msgList.push(msgItem)
+            console.log('msgList updated', msgItem)
+        },
     },
     actions: {
         // 在这里定义异步操作或提交mutations的方法(actions)
