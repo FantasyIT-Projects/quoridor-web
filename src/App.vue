@@ -1,20 +1,17 @@
-<script setup>
-import UserView from '@/views/UserView.vue'
-import HomeView from '@/views/HomeView.vue'
-</script>
-
 <template>
     <HomeView v-if="!showUserView"
-              :userInfo="userInfo" :wss="wss" :pingResult="pingResult"
-              :player="player"
-              v-bind="$attrs"
-              @openUserView="openUserView"
+               :userInfo="userInfo" :wss="wss" :pingResult="pingResult"
+               :player="player"
+               v-bind="$attrs"
+               @openUserView="openUserView"
     />
     <UserView v-else
               :wss="wss"
               v-bind="$attrs"
               @openUserView="openUserView"
     />
+
+    <router-view></router-view>
 
     <el-dialog title="游戏结束" v-model="gameOverDialog" :before-close="nextGame">
         <div style="display: flex; justify-content: center; flex-direction: column; align-items: center;">
@@ -27,24 +24,27 @@ import HomeView from '@/views/HomeView.vue'
 </template>
 
 <script>
+import UserView from '@/views/UserView.vue'
 import { generateId } from '@/utils/user.js'
+import HomeView from '@/views/HomeView.vue'
 
 export default {
+    components: { HomeView, UserView },
     data() {
         return {
             showUserView: true,
             gameOverDialog: false,
-            gameOverDialogText: "",
+            gameOverDialogText: '',
             userInfo: {
-                name: "",
-                id: "",
+                name: '',
+                id: '',
                 ready: false,
                 offline: false,
                 metadata: {
-                    head: ""
-                },
+                    head: ''
+                }
             },
-            roomId: "",
+            roomId: '',
             wss: null,
             pingResult: [],
             player: [],
@@ -52,7 +52,16 @@ export default {
             lastOp: {},
             opHistoryList: [],
             winner: {},
-            rank: [],
+            rank: []
+        }
+    },
+    watch: {
+        '$store.state.userInfo': {
+            handler() {
+                console.log('userInfo changed')
+                this.userInfo = this.$store.state.userInfo
+            },
+            deep: true
         }
     },
     methods: {
@@ -96,7 +105,7 @@ export default {
                 switch (type) {
                     case 'ping':
                         this.wss.send(JSON.stringify(
-                            { "type": "pong", }
+                            { 'type': 'pong' }
                         ))
                         break
                     case 'pingResult':
@@ -136,9 +145,11 @@ export default {
                         this.game = {}
 
                         this.$store.commit('updateGame', this.game)
+                        this.$store.commit('updatePlayerList', this.player)
+                        this.$store.commit('updateOpHistoryList', [])
                         break
                     case 'msg':
-                        this.$store.commit("addMsg",JSON.parse(event.data))
+                        this.$store.commit('addMsg', JSON.parse(event.data))
                         break
                     case 'fail':
                         this.$message.error('非法操作')

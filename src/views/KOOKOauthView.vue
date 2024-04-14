@@ -6,6 +6,7 @@
 import {ElMessage} from "element-plus";
 import axios from "axios";
 import { generateId } from '@/utils/user.js'
+import router from '@/router/index.js'
 
 export default {
     name: "KOOKOauthView",
@@ -43,6 +44,7 @@ export default {
                     axios.post(`https://bangumi-api.chiyukiruon.top/get_user_info?access_token=${resp.data.access_token}`)
                         .then(response => {
                             if (response.data.code === 0) {
+                                this.$store.commit('updateUserInfo', this.extractUserInfo(response.data.data))
                                 localStorage.setItem('UserInfo', JSON.stringify(this.extractUserInfo(response.data.data)))
                             } else {
                                 ElMessage.error('出现错误')
@@ -50,9 +52,7 @@ export default {
                             }
                             this.isLoading = false
 
-                            this.$router.push({
-                                path: `/`,
-                            })
+                            router.push('/')
                       })
                 }else {
                     ElMessage.error('授权失败')

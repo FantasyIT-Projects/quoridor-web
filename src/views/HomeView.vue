@@ -54,6 +54,7 @@ export default {
     // props: {
     //     game: {},
     // },
+    name: 'HomeView',
     data() {
         return {
             isRoomIdOK: false,

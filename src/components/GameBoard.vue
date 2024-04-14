@@ -48,10 +48,24 @@ export default {
             handler() {
                 console.log('update chess')
                 if (Object.keys(this.game).length === 0) {
+                    this.status = {
+                        current: -1,
+                        gameBoard: [],
+                        playersPos: {},
+                        playerPosXY: []
+                    }
+
                     const chess = document.getElementsByClassName('chess')
                     if (chess.length === 0) return
                     while (chess.length !== 0) {
                         chess[0].remove()
+                    }
+
+                    for (let i = 0; i < 9 * 2 + 1; i++) {
+                        this.status.gameBoard.push([]);
+                        for (let j = 0; j < 9 * 2 + 1; j++) {
+                            this.status.gameBoard[i].push(-1);
+                        }
                     }
 
                     return
@@ -71,8 +85,8 @@ export default {
                 if (Object.keys(this.game).length === 0) {
                     const wall = document.getElementsByClassName('wall')
                     if (wall.length === 0) return
-                    while (wall.length !== 0) {
-                        wall[0].remove()
+                    while (wall[0]) {
+                        wall[0].classList.remove('wall')
                     }
 
                     return

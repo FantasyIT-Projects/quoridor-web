@@ -4,11 +4,11 @@ import HomeView from '../views/HomeView.vue'
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
-        // {
-        //     path: '/',
-        //     name: 'home',
-        //     component: HomeView
-        // },
+        {
+            path: '/',
+            name: 'home',
+            component: HomeView
+        },
         // {
         //     path: '/user',
         //     name: 'user',
@@ -25,7 +25,7 @@ const router = createRouter({
                 title: 'KOOK 授权|步步为营'
             }
         }
-    ]
+    ],
 })
 
 export default router
