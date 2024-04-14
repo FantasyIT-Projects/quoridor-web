@@ -83,8 +83,8 @@ export default {
          * @author ChiyukiRuon
          * */
         startWss() {
-            // this.wss = new WebSocket('ws://zxy19.e2.luyouxia.net:20307')
-            this.wss = new WebSocket('ws://127.0.0.1:19981')
+            this.wss = new WebSocket('ws://zxy19.e2.luyouxia.net:20307')
+            // this.wss = new WebSocket('ws://127.0.0.1:19981')
 
             this.wss.onopen = () => {
                 console.info('WebSocket连接已建立')

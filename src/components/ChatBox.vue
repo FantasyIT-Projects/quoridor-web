@@ -21,7 +21,7 @@
         <div class="chat-box-controls">
             <el-form :inline="true" style="padding-left: 15px;" @submit.prevent.stop="sendMsg">
                 <el-form-item style="width: calc(100% - 70px);">
-                    <el-input v-model="msg" placeholder="请输入内容" size="small"></el-input>
+                    <el-input v-model="msg" placeholder="请输入消息" size="small"></el-input>
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click.prevent.stop="sendMsg" size="small">发送</el-button>
@@ -75,6 +75,7 @@ export default {
     height: auto !important;
     padding-bottom: 5px;
     background-color: var(--border-bg-color);
+    margin-top: 5px;
 }
 
 .chat-box-title {
