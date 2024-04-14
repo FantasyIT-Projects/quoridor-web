@@ -104,6 +104,7 @@ export default {
                         break
                     case 'room':
                         this.player = JSON.parse(event.data).player
+                        this.$store.commit('updatePlayerList', this.player)
                         break
                     case 'start':
                         this.game = JSON.parse(event.data).game
@@ -136,6 +137,9 @@ export default {
 
                         this.$store.commit('updateGame', this.game)
                         break
+
+                    case 'msg':
+                        this.$store.commit("addMsg",JSON.parse(event.data))
                 }
             }
 

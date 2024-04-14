@@ -17,6 +17,8 @@ export default createStore({
             },
         },
         opHistoryList: [],
+        msgList: [],
+        playerList: [],
     },
     mutations: {
         // 在这里定义同步修改状态的方法(mutations)
@@ -34,7 +36,10 @@ export default createStore({
             state.roomId = roomId
             console.log('roomId updated', roomId)
         },
-
+        updatePlayerList(state, playerList) {
+            state.playerList = playerList
+            console.log('playerList updated', playerList)
+        },
         updateUserInfo(state, userInfo) {
             state.userInfo = userInfo
             console.log('userInfo updated', userInfo)
@@ -43,6 +48,11 @@ export default createStore({
         updateOpHistoryList(state, opHistoryList) {
             state.opHistoryList = opHistoryList
             console.log('opHistoryList updated', opHistoryList)
+        },
+
+        addMsg(state, msgItem) {
+            state.msgList.push(msgItem)
+            console.log('msgList updated', msgItem)
         },
     },
     actions: {
