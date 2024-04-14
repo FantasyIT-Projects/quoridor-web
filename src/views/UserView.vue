@@ -73,6 +73,27 @@ export default {
                 metadata: {
                     head: ""
                 },
+            },
+        }
+    },
+    watch: {
+        'userInfo.name'(newVal) {
+            if (this.isUsernameOK && newVal !== this.$store.state.userInfo.name) {
+                this.userInfo.id = generateId(newVal)
+                this.$store.commit('updateUserInfo', this.userInfo)
+                localStorage.setItem('UserInfo', JSON.stringify(this.userInfo))
+            }
+        },
+        'userInfo.metadata.head'(newVal) {
+            if (newVal !== this.$store.state.userInfo.metadata.head) {
+                this.$attrs.wss.send(JSON.stringify({
+                    'type': 'metadata',
+                    'metadata': {
+                        'head': this.userInfo.metadata.head
+                    }
+                }))
+                this.$store.commit('updateUserInfo', this.userInfo)
+                localStorage.setItem('UserInfo', JSON.stringify(this.userInfo))
             }
         }
     },
@@ -110,9 +131,10 @@ export default {
                 if (res.data.code === 200) {
                     this.userInfo.name = res.data.name
                     this.userInfo.metadata.head = res.data.imgurl
-                    this.userInfo.id = qq
+                    this.userInfo.id = generateId(res.data.name)
 
                     localStorage.setItem('UserInfo', JSON.stringify(this.userInfo))
+                    this.$store.commit('updateUserInfo', this.userInfo)
                     this.isGettingQQInfo = false
                     this.QQDialog = false
                 }else {
@@ -131,7 +153,6 @@ export default {
          * @author ChiyukiRuon
          * */
         clearUserInfo() {
-            localStorage.clear()
             this.userInfo = {
                 name: "",
                 id: "",
@@ -141,6 +162,9 @@ export default {
                     head: ""
                 },
             }
+
+            localStorage.clear()
+            this.$store.commit('updateUserInfo', this.userInfo)
         },
 
         /**
@@ -150,24 +174,12 @@ export default {
          * @author ChiyukiRuon
          * */
         openUserView() {
-            const storedUserInfo = JSON.parse(localStorage.getItem('UserInfo'))
-            console.log(this.userInfo)
-
             if (this.userInfo.id === '') {
                 this.userInfo.id = generateId(this.userInfo.name)
             }
 
-            if (!storedUserInfo || storedUserInfo.name !== this.userInfo.name || storedUserInfo.metadata.head !== this.userInfo.metadata.head) {
-                if (storedUserInfo && storedUserInfo.name !== this.userInfo.name) {
-                    this.userInfo.id = generateId(this.userInfo.name)
-                }else if (storedUserInfo && storedUserInfo.metadata.head !== this.userInfo.metadata.head) {
-                    this.$attrs.wss.send(JSON.stringify({
-                        'type': 'metadata',
-                        'head': this.userInfo.metadata.head
-                    }))
-                }
-                localStorage.setItem('UserInfo', JSON.stringify(this.userInfo))
-            }
+            localStorage.setItem('UserInfo', JSON.stringify(this.userInfo))
+            this.$store.commit('updateUserInfo', this.userInfo)
 
             this.$emit('openUserView', false)
         }

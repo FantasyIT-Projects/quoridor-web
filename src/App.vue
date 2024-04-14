@@ -6,7 +6,7 @@ import HomeView from '@/views/HomeView.vue'
 <template>
     <HomeView v-if="!showUserView"
               :userInfo="userInfo" :wss="wss" :pingResult="pingResult"
-              :player="player" :game="game" :lastOp="lastOp"
+              :player="player"
               v-bind="$attrs"
               @openUserView="openUserView"
     />
@@ -48,7 +48,7 @@ export default {
             wss: null,
             pingResult: [],
             player: [],
-            game: [],
+            game: {},
             lastOp: {},
             winner: {},
             rank: [],
@@ -107,6 +107,8 @@ export default {
                     case 'start':
                         this.game = JSON.parse(event.data).game
                         this.player = JSON.parse(event.data).game.players
+
+                        this.$store.commit('updateGame', this.game)
                         break
                     case 'stage':
                         this.game.current = JSON.parse(event.data).current
@@ -115,6 +117,9 @@ export default {
                             this.game.players[JSON.parse(event.data).lastOp.player].wallRest -= 1
                         }
                         this.lastOp = JSON.parse(event.data).lastOp
+
+                        this.$store.commit('updateGame', this.game)
+                        this.$store.commit('updateLastOp', this.lastOp)
                         break
                     case 'won':
                         this.winner = this.player[JSON.parse(event.data).player]
@@ -124,7 +129,9 @@ export default {
                     case 'end':
                         this.player = JSON.parse(event.data).players
                         this.rank = JSON.parse(event.data).rank
-                        this.game = []
+                        this.game = {}
+
+                        this.$store.commit('updateGame', this.game)
                         break
                 }
             }
@@ -155,6 +162,7 @@ export default {
         if (localStorage.getItem('UserInfo')) {
             this.userInfo = JSON.parse(localStorage.getItem('UserInfo'))
             if (this.userInfo.id === '') this.userInfo.id = generateId(this.userInfo.name)
+            this.$store.commit('updateUserInfo', this.userInfo)
             this.showUserView = false
             this.startWss()
         }

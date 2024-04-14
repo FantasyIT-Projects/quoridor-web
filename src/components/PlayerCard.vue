@@ -1,7 +1,7 @@
 <template>
     <div class="player-card" ref="player-card">
         <div style="width: 40px; height: 40px;">
-            <el-avatar :src="player.metadata.head" :size="40" >{{ player.name.substring(0, 2) }}</el-avatar>
+            <el-avatar :src="player.metadata?player.metadata.head:''" :size="40" >{{ player.name.substring(0, 2) }}</el-avatar>
         </div>
         <div class="player-detail">
             <el-text size="large" tag="b" style="max-width: 123px" truncated>{{ player.name }}</el-text>
@@ -30,24 +30,36 @@ export default {
             type: Number,
             default: 0
         },
-        game: {},
         inGameId: -1,
+    },
+    computed: {
+        game() {
+            return this.$store.state.game;
+        }
+    },
+    data() {
+        return {
+
+        }
     },
     watch: {
         'game.current': {
             handler() {
+                // console.log('UserCard', this.game)
                 if (!this.player.offline && this.inGameId === this.game.current) {
                     this.$refs['player-card'].style.border = '2px solid #67C23A'
                 }else {
                     this.$refs['player-card'].style.border = '2px solid rgba(0,0,0,0)'
                 }
-            }
+            },
+            deep: true
         }
     },
     mounted() {
         if (!this.player.offline && this.inGameId === this.game.current) {
             this.$refs['player-card'].style.border = '2px solid #67C23A'
         }
+        console.log(this.player)
     }
 }
 </script>

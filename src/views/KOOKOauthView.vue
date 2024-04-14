@@ -5,6 +5,7 @@
 <script>
 import {ElMessage} from "element-plus";
 import axios from "axios";
+import { generateId } from '@/utils/user.js'
 
 export default {
     name: "KOOKOauthView",
@@ -22,11 +23,11 @@ export default {
          * @author ChiyukiRuon
          * */
         extractUserInfo(userObj) {
-            const { id, username, avatar } = userObj;
+            const { username, avatar } = userObj;
 
             return {
                 name: username,
-                id: id,
+                id: generateId(username),
                 ready: false,
                 offline: false,
                 metadata: {

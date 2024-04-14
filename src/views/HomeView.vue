@@ -15,8 +15,7 @@ import PlayerCard from '@/components/PlayerCard.vue'
                     <el-input v-model="roomId" :disabled="isUserInRoom" />
                 </el-form-item>
                 <el-button type="primary" style="margin-left: 10px"
-                           v-if="!isUserInRoom"
-                           :disabled="!isRoomIdOK" :refresh="refresh"
+                           v-if="!isUserInRoom" :disabled="!isRoomIdOK"
                            @click="joinRoom"
                 >加入房间
                 </el-button>
@@ -28,14 +27,14 @@ import PlayerCard from '@/components/PlayerCard.vue'
         </div>
     </div>
     <div class="main">
-        <GameBoard v-bind="$attrs" :game="game" :last-op="$attrs.lastOp" />
+        <GameBoard v-bind="$attrs" />
         <div class="side">
             <div class="player-list">
-                <div class="player-list-title"><span>玩家列表 #{{ currentRoomId }}</span></div>
+                <div class="player-list-title"><span>玩家列表 #{{ $store.state.roomId }}</span></div>
                 <div class="player-card-list" v-if="$attrs.player">
                     <span v-for="(player, index) in $attrs.player" :key="index">
                         <PlayerCard :player="player" :delay="$attrs.pingResult[index]"
-                                    :game="game" :in-game-id="index"
+                                    :in-game-id="index"
                         />
                     </span>
                 </div>
@@ -48,18 +47,22 @@ import PlayerCard from '@/components/PlayerCard.vue'
 
 <script>
 export default {
-    props: {
-        game: {},
-    },
+    // props: {
+    //     game: {},
+    // },
     data() {
         return {
             isRoomIdOK: false,
             isUserReady: false,
             isUserInRoom: false,
-            refresh: 0,
-            roomId: this.$attrs.roomId ? this.$attrs.roomId : '',
+            roomId: this.$store.state.roomId,
             currentRoomId: '',
         }
+    },
+    computed: {
+        game() {
+            return this.$store.state.game
+        },
     },
     watch: {
         roomId(newVal) {
@@ -95,13 +98,13 @@ export default {
                 'player': this.$attrs.userInfo
             }))
 
+            this.$store.commit('updateRoomId', this.roomId)
             this.currentRoomId = this.roomId
             this.isRoomIdOK = false
             this.isUserInRoom = true
         },
 
         getReady() {
-            this.refresh += 1
             this.isUserReady = !this.isUserReady
             this.$attrs.wss.send(JSON.stringify({
                 'type': 'ready',
@@ -110,12 +113,7 @@ export default {
         }
     },
     mounted() {
-        console.log(this.$attrs)
-        if (localStorage.getItem('RoomId')) {
-            this.roomId = localStorage.getItem('RoomId')
-            this.currentRoomId = this.roomId
-            this.isUserInRoom = true
-        }
+
     }
 }
 </script>

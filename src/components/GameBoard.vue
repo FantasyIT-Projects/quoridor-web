@@ -1,5 +1,5 @@
 <template>
-    <div class="board" :key="refresh">
+    <div class="board">
         <div v-for="row in 9" :key="row" class="row">
             <div v-for="column in 9" :key="column" class="column">
                 <div style="display: flex;">
@@ -130,12 +130,15 @@ export default {
         },
     },
     props: {
-        refresh: {
-            type: Number,
-            default: 0
+
+    },
+    computed: {
+        game() {
+            return this.$store.state.game
         },
-        game: {},
-        lastOp: {},
+        lastOp() {
+            return this.$store.state.lastOp
+        }
     },
     data() {
         return {
