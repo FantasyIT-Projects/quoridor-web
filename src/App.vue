@@ -75,9 +75,15 @@ export default {
             this.gameOverDialog = false
         },
 
+        /**
+         * 启动WebSocket连接
+         *
+         * @return void
+         * @author ChiyukiRuon
+         * */
         startWss() {
-            this.wss = new WebSocket('ws://zxy19.e2.luyouxia.net:20307')
-            // this.wss = new WebSocket('ws://127.0.0.1:19981')
+            // this.wss = new WebSocket('ws://zxy19.e2.luyouxia.net:20307')
+            this.wss = new WebSocket('ws://127.0.0.1:19981')
 
             this.wss.onopen = () => {
                 console.info('WebSocket连接已建立')
@@ -126,12 +132,23 @@ export default {
             this.wss.onclose = () => {
                 // this.ws = null
                 console.warn('WebSocket连接已关闭')
-
+                this.$message.warning('WebSocket连接已关闭')
             }
 
             this.wss.onerror = (error) => {
                 console.error('WebSocket错误：', error)
+                this.$message.error(`WebSocket错误：${error}`)
             }
+        },
+
+        /**
+         * 重连
+         *
+         * @return void
+         * @author ChiyukiRuon
+         * */
+        reconnectWss() {
+            // TODO 断线重连
         }
     },
     mounted() {

@@ -22,20 +22,20 @@ import PlayerCard from '@/components/PlayerCard.vue'
                 </el-button>
             </el-form>
         </div>
-        <div style="margin-left: 10px;" v-if="isUserInRoom && Object.keys($attrs.game).length === 0">
+        <div style="margin-left: 10px;" v-if="isUserInRoom && Object.keys(game).length === 0">
             <el-button type="success" @click="getReady" v-if="!isUserReady">准备</el-button>
             <el-button type="warning" @click="getReady" v-else>取消准备</el-button>
         </div>
     </div>
     <div class="main">
-        <GameBoard v-bind="$attrs" :game="$attrs.game" :last-op="$attrs.lastOp" />
+        <GameBoard v-bind="$attrs" :game="game" :last-op="$attrs.lastOp" />
         <div class="side">
             <div class="player-list">
                 <div class="player-list-title"><span>玩家列表 #{{ currentRoomId }}</span></div>
                 <div class="player-card-list" v-if="$attrs.player">
                     <span v-for="(player, index) in $attrs.player" :key="index">
                         <PlayerCard :player="player" :delay="$attrs.pingResult[index]"
-                                    :game="$attrs.game" :in-game-id="index"
+                                    :game="game" :in-game-id="index"
                         />
                     </span>
                 </div>
@@ -48,6 +48,9 @@ import PlayerCard from '@/components/PlayerCard.vue'
 
 <script>
 export default {
+    props: {
+        game: {},
+    },
     data() {
         return {
             isRoomIdOK: false,
@@ -61,7 +64,12 @@ export default {
     watch: {
         roomId(newVal) {
             this.isRoomIdOK = newVal !== this.currentRoomId && newVal.replace(/\s+/g, '').length > 0
-        }
+        },
+        game(newVal) {
+            if (Object.keys(newVal).length === 0) {
+                this.isUserReady = false
+            }
+        },
     },
     methods: {
         /**
@@ -103,6 +111,11 @@ export default {
     },
     mounted() {
         console.log(this.$attrs)
+        if (localStorage.getItem('RoomId')) {
+            this.roomId = localStorage.getItem('RoomId')
+            this.currentRoomId = this.roomId
+            this.isUserInRoom = true
+        }
     }
 }
 </script>

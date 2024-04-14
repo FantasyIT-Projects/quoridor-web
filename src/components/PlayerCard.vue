@@ -1,10 +1,10 @@
 <template>
     <div class="player-card" ref="player-card">
-        <div style="width: 40px; height: 40px">
-            <el-avatar :src="player.metadata.head" :size="40" >{{ player.name }}</el-avatar>
+        <div style="width: 40px; height: 40px;">
+            <el-avatar :src="player.metadata.head" :size="40" >{{ player.name.substring(0, 2) }}</el-avatar>
         </div>
         <div class="player-detail">
-            <el-text size="large" tag="b" style="max-width: 144px" truncated>{{ player.name }}</el-text>
+            <el-text size="large" tag="b" style="max-width: 123px" truncated>{{ player.name }}</el-text>
             <el-text type="info">剩余墙：{{ player.wallRest?player.wallRest:0 }}</el-text>
         </div>
         <div class="player-delay">
@@ -87,5 +87,9 @@ img {
     align-items: center;
     margin-left: auto;
     margin-right: 15px;
+
+    img {
+        border-radius: 100%;
+    }
 }
 </style>

@@ -47,7 +47,15 @@ export default {
         'game.chesses': {
             handler() {
                 console.log('update chess')
-                if (Object.keys(this.game).length === 0) return
+                if (Object.keys(this.game).length === 0) {
+                    const chess = document.getElementsByClassName('chess')
+                    if (chess.length === 0) return
+                    while (chess.length !== 0) {
+                        chess[0].remove()
+                    }
+
+                    return
+                }
                 if (this.game.chesses) {
                     for (let i = 0; i < this.game.chesses.length; i++) {
                         this.status.playerPosXY.push({start: this.game.chesses[i].position, position: []})
@@ -60,7 +68,15 @@ export default {
         'game.walls': {
             handler() {
                 console.log('update wall')
-                if (Object.keys(this.game).length === 0) return
+                if (Object.keys(this.game).length === 0) {
+                    const wall = document.getElementsByClassName('wall')
+                    if (wall.length === 0) return
+                    while (wall.length !== 0) {
+                        wall[0].remove()
+                    }
+
+                    return
+                }
                 if (this.game.walls.length !== 0) {
                     for (let i = 0; i < this.game.walls.length; i++) {
                         const midpoints = [(this.game.walls[i].position[0][0] + this.game.walls[i].position[1][0]) / 2, (this.game.walls[i].position[0][1] + this.game.walls[i].position[1][1]) / 2]
@@ -226,6 +242,9 @@ export default {
                     chessDiv = document.createElement('div')
                     chessDiv.id = 'preview'
                     chessDiv.className = 'preview-chess'
+                    if (this.game.players[this.game.current].metadata.head === '') {
+                        chessDiv.innerText = this.game.players[this.game.current].name
+                    }
                     chessDiv.style.backgroundImage = `url('${this.game.players[this.game.current].metadata.head}')`
                     container[0].appendChild(chessDiv)
                 }
@@ -273,6 +292,9 @@ export default {
                 chessDiv = document.createElement('div')
                 chessDiv.id = id.toString()
                 chessDiv.className = 'chess'
+                if (player.metadata.head === '') {
+                    chessDiv.innerText = player.name
+                }
                 chessDiv.style.backgroundImage = `url('${player.metadata.head}')`
                 container[0].appendChild(chessDiv)
             }
@@ -444,21 +466,31 @@ export default {
         this.userInfo = JSON.parse(localStorage.getItem('UserInfo'))
     },
     mounted() {
-        // this.$nextTick(() => {
-        //     console.log(this.game)
-        //     if (Object.keys(this.game).length !== 0) {
-        //         console.log(this.game.walls)
-        //         if (this.game.walls.length !== 0) {
-        //             for (let i = 0; i < this.game.walls.length; i++) {
-        //                 if (this.game.walls[i].position[1][0] === this.game.walls[i].position[0][0]) {
-        //                     this.setWall('right', this.game.walls[i].position[0][0], this.game.walls[i].position[0][1])
-        //                 } else {
-        //                     this.setWall('bottom', this.game.walls[i].position[0][0], this.game.walls[i].position[0][1])
-        //                 }
-        //             }
-        //         }
-        //     }
-        // })
+        this.$nextTick(() => {
+            // console.log(this.game)
+            if (Object.keys(this.game).length !== 0) {
+                if (Object.keys(this.game).length === 0) return
+
+                if (this.game.chesses) {
+                    for (let i = 0; i < this.game.chesses.length; i++) {
+                        this.status.playerPosXY.push({start: this.game.chesses[i].position, position: []})
+                        this.updateChessPos(this.game.chesses[i].player, this.game.chesses[i].position, this.game.players[i])
+                    }
+                }
+
+                if (this.game.walls.length !== 0) {
+                    for (let i = 0; i < this.game.walls.length; i++) {
+                        const midpoints = [(this.game.walls[i].position[0][0] + this.game.walls[i].position[1][0]) / 2, (this.game.walls[i].position[0][1] + this.game.walls[i].position[1][1]) / 2]
+                        console.log(midpoints)
+                        if (this.game.walls[i].position[1][0] === this.game.walls[i].position[0][0]) {
+                            this.reConnectSetWall('right', midpoints[0] - 1, midpoints[1] - 1)
+                        } else {
+                            this.reConnectSetWall('bottom', midpoints[0] - 1, midpoints[1])
+                        }
+                    }
+                }
+            }
+        })
     }
 }
 </script>
@@ -526,6 +558,12 @@ export default {
     border: 1px solid #FFFFFF;
     border-radius: 100%;
     background-size: var(--chess-size);
+    background-color: #C0C4CC;
+    text-align: center;
+    line-height: var(--chess-size);
+    color: #FFFFFF;
+    word-break: break-word;
+    overflow: hidden;
 }
 
 .preview-chess {
@@ -534,6 +572,12 @@ export default {
     border: 1px solid #FFFFFF;
     border-radius: 100%;
     background-size: var(--chess-size);
+    background-color: #C0C4CC;
+    text-align: center;
+    line-height: var(--chess-size);
+    color: #FFFFFF;
+    word-break: break-word;
+    overflow: hidden;
     opacity: 0.5;
 }
 
