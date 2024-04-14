@@ -15,7 +15,8 @@ export default createStore({
             metadata: {
                 head: ""
             },
-        }
+        },
+        opHistoryList: [],
     },
     mutations: {
         // 在这里定义同步修改状态的方法(mutations)
@@ -37,7 +38,12 @@ export default createStore({
         updateUserInfo(state, userInfo) {
             state.userInfo = userInfo
             console.log('userInfo updated', userInfo)
-        }
+        },
+
+        updateOpHistoryList(state, opHistoryList) {
+            state.opHistoryList = opHistoryList
+            console.log('opHistoryList updated', opHistoryList)
+        },
     },
     actions: {
         // 在这里定义异步操作或提交mutations的方法(actions)

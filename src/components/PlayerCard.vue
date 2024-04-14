@@ -1,5 +1,5 @@
 <template>
-    <div class="player-card" ref="player-card">
+    <div v-if="size === 'default'" class="player-card" ref="player-card">
         <div style="width: 40px; height: 40px;">
             <el-avatar :src="player.metadata?player.metadata.head:''" :size="40" >{{ player.name.substring(0, 2) }}</el-avatar>
         </div>
@@ -19,12 +19,22 @@
             <div v-if="!player.ready && inGameId !== game.current && !player.offline" style="width: 28px"></div>
         </div>
     </div>
+    <div v-else-if="size === 'mini'" style="display: flex; align-items: center;">
+        <div style="width: 20px; height: 20px; display: flex; align-items: center">
+            <el-avatar :src="player.metadata.head" :size="20" >{{ player.name.substring(0, 2) }}</el-avatar>
+        </div>
+        <div style="margin-left: 5px; margin-right: 5px; font-size: small">{{ player.name }}</div>
+    </div>
 </template>
 
 <script>
 export default {
     name: "PlayerCard",
     props: {
+        size: {
+            type: String,
+            default: 'default'
+        },
         player: {},
         delay: {
             type: Number,
@@ -45,7 +55,7 @@ export default {
     watch: {
         'game.current': {
             handler() {
-                // console.log('UserCard', this.game)
+                if (this.size !== 'default') return
                 if (!this.player.offline && this.inGameId === this.game.current) {
                     this.$refs['player-card'].style.border = '2px solid #67C23A'
                 }else {
@@ -59,7 +69,6 @@ export default {
         if (!this.player.offline && this.inGameId === this.game.current) {
             this.$refs['player-card'].style.border = '2px solid #67C23A'
         }
-        console.log(this.player)
     }
 }
 </script>

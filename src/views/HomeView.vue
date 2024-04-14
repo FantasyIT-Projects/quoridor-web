@@ -1,6 +1,7 @@
 <script setup>
 import GameBoard from '@/components/GameBoard.vue'
 import PlayerCard from '@/components/PlayerCard.vue'
+import HistoryBox from '@/components/HistoryBox.vue'
 </script>
 
 <template>
@@ -29,9 +30,9 @@ import PlayerCard from '@/components/PlayerCard.vue'
     <div class="main">
         <GameBoard v-bind="$attrs" />
         <div class="side">
-            <div class="player-list">
+            <div class="history">
                 <div class="player-list-title"><span>玩家列表 #{{ $store.state.roomId }}</span></div>
-                <div class="player-card-list" v-if="$attrs.player">
+                <div class="history-operate" v-if="$attrs.player">
                     <span v-for="(player, index) in $attrs.player" :key="index">
                         <PlayerCard :player="player" :delay="$attrs.pingResult[index]"
                                     :in-game-id="index"
@@ -39,7 +40,7 @@ import PlayerCard from '@/components/PlayerCard.vue'
                     </span>
                 </div>
             </div>
-            <div>History</div>
+            <div><history-box /></div>
             <div>Chat</div>
         </div>
     </div>
@@ -151,7 +152,7 @@ export default {
     margin-left: 35px;
 }
 
-.player-list {
+.history {
     border-radius: 20px;
     min-height: 150px;
     height: auto !important;
@@ -172,7 +173,7 @@ export default {
     }
 }
 
-.player-card-list {
+.history-operate {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;

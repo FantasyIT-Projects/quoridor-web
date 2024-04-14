@@ -50,6 +50,7 @@ export default {
             player: [],
             game: {},
             lastOp: {},
+            opHistoryList: [],
             winner: {},
             rank: [],
         }
@@ -117,9 +118,11 @@ export default {
                             this.game.players[JSON.parse(event.data).lastOp.player].wallRest -= 1
                         }
                         this.lastOp = JSON.parse(event.data).lastOp
+                        this.opHistoryList.push(this.lastOp)
 
                         this.$store.commit('updateGame', this.game)
                         this.$store.commit('updateLastOp', this.lastOp)
+                        this.$store.commit('updateOpHistoryList', this.opHistoryList)
                         break
                     case 'won':
                         this.winner = this.player[JSON.parse(event.data).player]
