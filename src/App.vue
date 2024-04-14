@@ -83,7 +83,7 @@ export default {
          * @author ChiyukiRuon
          * */
         startWss() {
-            this.wss = new WebSocket('ws://zxy19.e2.luyouxia.net:20307')
+            this.wss = new WebSocket('wss://xypp.cc:18541')
             // this.wss = new WebSocket('ws://127.0.0.1:19981')
 
             this.wss.onopen = () => {
@@ -137,9 +137,12 @@ export default {
 
                         this.$store.commit('updateGame', this.game)
                         break
-
                     case 'msg':
                         this.$store.commit("addMsg",JSON.parse(event.data))
+                        break
+                    case 'fail':
+                        this.$message.error('非法操作')
+                        break
                 }
             }
 
