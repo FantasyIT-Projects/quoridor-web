@@ -101,7 +101,7 @@ export default {
         /**
          * 检测用户名合法性
          *
-         * @return void 是否合法
+         * @return void
          * @author ChiyukiRuon
          * */
         checkUsername() {
@@ -187,6 +187,8 @@ export default {
     mounted() {
         if (localStorage.getItem("UserInfo")) {
             this.userInfo = JSON.parse(localStorage.getItem("UserInfo"))
+        }else {
+            this.checkUsername()
         }
     }
 }

@@ -32,6 +32,7 @@ export default {
     components: { HomeView, UserView },
     data() {
         return {
+            isTabVisible: true,
             showUserView: true,
             gameOverDialog: false,
             gameOverDialogText: '',
@@ -58,8 +59,18 @@ export default {
     watch: {
         '$store.state.userInfo': {
             handler() {
-                console.log('userInfo changed')
                 this.userInfo = this.$store.state.userInfo
+            },
+            deep: true
+        },
+        '$store.state.lastOp': {
+            handler() {
+                if (Object.keys(this.game).length === 0) return
+                if (!this.isTabVisible && this.game.players[this.game.current].id === this.userInfo.id) {
+                    const img = "/favicon.ico";
+                    const text = `你的回合！`;
+                    new Notification("步步为营", { body: text, icon: img })
+                }
             },
             deep: true
         }
@@ -100,7 +111,7 @@ export default {
             }
 
             this.wss.onmessage = (event) => {
-                console.info('收到WebSocket消息：', JSON.parse(event.data))
+                // console.info('收到WebSocket消息：', JSON.parse(event.data))
                 const type = JSON.parse(event.data).type
                 switch (type) {
                     case 'ping':
@@ -113,6 +124,13 @@ export default {
                         break
                     case 'room':
                         this.player = JSON.parse(event.data).player
+
+                        this.player.forEach(player => {
+                            if (player.id === this.userInfo.id) {
+                                this.$store.commit('updateIsUserReady', player.ready)
+                            }
+                        })
+
                         this.$store.commit('updatePlayerList', this.player)
                         break
                     case 'start':
@@ -120,6 +138,7 @@ export default {
                         this.player = JSON.parse(event.data).game.players
 
                         this.$store.commit('updateGame', this.game)
+                        this.$store.commit('updatePlayerList', this.player)
                         break
                     case 'stage':
                         this.game.current = JSON.parse(event.data).current
@@ -132,6 +151,7 @@ export default {
 
                         this.$store.commit('updateGame', this.game)
                         this.$store.commit('updateLastOp', this.lastOp)
+                        this.$store.commit('updatePlayerList', this.player)
                         this.$store.commit('updateOpHistoryList', this.opHistoryList)
                         break
                     case 'won':
@@ -144,9 +164,7 @@ export default {
                         this.rank = JSON.parse(event.data).rank
                         this.game = {}
 
-                        this.$store.commit('updateGame', this.game)
-                        this.$store.commit('updatePlayerList', this.player)
-                        this.$store.commit('updateOpHistoryList', [])
+                        this.$store.commit('gameOver')
                         break
                     case 'msg':
                         this.$store.commit('addMsg', JSON.parse(event.data))
@@ -177,7 +195,26 @@ export default {
          * */
         reconnectWss() {
             // TODO 断线重连
-        }
+        },
+
+        /**
+         * 监听页面是否可见
+         *
+         * @return void
+         * @author ChiyukiRuon
+         * */
+        tabVisibility() {
+            document.title = document.title.replaceAll('[后台]', '');
+            // 用户息屏、或者切到后台运行 （离开页面）
+            if (document.visibilityState === 'hidden') {
+                document.title = '[后台]' + document.title;
+                this.isTabVisible = false
+            }
+            // 用户打开或回到页面
+            if (document.visibilityState === 'visible') {
+                this.isTabVisible = true
+            }
+        },
     },
     mounted() {
         if (localStorage.getItem('UserInfo')) {
@@ -187,9 +224,12 @@ export default {
             this.showUserView = false
             this.startWss()
         }
+
+        document.addEventListener('visibilitychange', this.tabVisibility)
     },
     beforeUnmount() {
         this.wss.close()
+        document.removeEventListener('visibilitychange', this.tabVisibility)
     }
 }
 </script>

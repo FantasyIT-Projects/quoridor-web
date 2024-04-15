@@ -1,5 +1,12 @@
 // 棋盘操作逻辑
 
+const CHESS_INITIAL_POS = [
+    [4,0],
+    [0,4],
+    [4,8],
+    [8,4],
+]
+
 /**
  * 更新棋子在棋盘操作数组中的位置
  *
@@ -197,7 +204,7 @@ const _dxy = [
 /**
  * 判断未来棋盘是否构成围死状况
  *
- * @param {Array} game 内部游戏对象
+ * @param {Array} game 玩家起始位置及当前位置数组
  * @param {Array} gameBoard 未来棋盘对象
  * @param {Array} wallPos 墙位置
  * @returns {Boolean} 是否围死
@@ -210,31 +217,53 @@ export function isNoPathOut(game, gameBoard, wallPos) {
     for (let i = 0; i < 9; i++) {
         reachable.push([]);
         for (let j = 0; j < 9; j++) {
-            reachable[i].push(false);
+            reachable[i].push(-1);
         }
     }
 
-    const dfsCheck = (x, y) => {
+    const dfsCheck = (x, y, checkId) => {
         if (x < 0 || x >= 9 || y < 0 || y >= 9) {
             return;
         }
-        if (reachable[x][y]) {
+        if (reachable[x][y] === checkId) {
             return;
         }
-        reachable[x][y] = true;
+        reachable[x][y] = checkId;
 
         for (let i = 0; i < 4; i++) {
+            if (x + _dxy[i][0] < 0 || x + _dxy[i][0] >= 9 || y + _dxy[i][1] < 0 || y + _dxy[i][1] >= 9)
+                continue;
             if (!isWallBetween(x, y, x + _dxy[i][0], y + _dxy[i][1], nextPad))
-                dfsCheck(x + _dxy[i][0], y + _dxy[i][1]);
+                dfsCheck(x + _dxy[i][0], y + _dxy[i][1], checkId);
         }
     }
 
-    dfsCheck(0, 0);
-    let result = false;
-    game.forEach(({ position: [x, y] }) => {
-        if (!reachable[x][y]) {
-            result = true;
+    for (let idx = 0; idx < game.length; idx++) {
+        const player = game[idx].start;
+        let chessOk = false;
+        let xRange = [0, 8];
+        let yRange = [0, 8];
+        switch (player.join(',')) {
+            case CHESS_INITIAL_POS[0].join(','):/*[4,0]*/yRange = [8, 8];break;
+            case CHESS_INITIAL_POS[1].join(','):/*[0,4]*/xRange = [8, 8];break;
+            case CHESS_INITIAL_POS[2].join(','):/*[4,8]*/yRange = [0, 0];break;
+            case CHESS_INITIAL_POS[3].join(','):/*[8,4]*/xRange = [0, 0];break;
+            default:continue;
         }
-    })
-    return result;
+        const [cx,cy] = game[idx].position;
+        for (let i = xRange[0]; i <= xRange[1]; i++) {
+            for (let j = yRange[0]; j <= yRange[1]; j++) {
+                dfsCheck(i, j, idx);
+                if(reachable[cx][cy] === idx){
+                    chessOk = true;
+                    break;
+                }
+            }
+            if(chessOk) break;
+        }
+        if(!chessOk){
+            return true;
+        }
+    }
+    return false;
 }

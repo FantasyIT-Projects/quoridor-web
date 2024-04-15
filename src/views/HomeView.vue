@@ -8,7 +8,7 @@ import HistoryBox from '@/components/HistoryBox.vue'
 <template>
     <div class="header">
         <div class="user-card" @click.prevent="openUserView">
-            <el-avatar :src="$attrs.userInfo.metadata.head" size="large" style="border: 2px solid #409EFF" >{{ $attrs.userInfo.name }}</el-avatar>
+            <el-avatar :src="userInfo.metadata.head" size="large" style="border: 2px solid #409EFF" >{{ userInfo.name }}</el-avatar>
             <div style="margin-left: 20px">{{ $attrs.userInfo.name }}</div>
         </div>
         <div class="room-id">
@@ -33,8 +33,8 @@ import HistoryBox from '@/components/HistoryBox.vue'
         <div class="side">
             <div class="history">
                 <div class="player-list-title"><span>玩家列表 #{{ $store.state.roomId }}</span></div>
-                <div class="history-operate" v-if="$attrs.player">
-                    <span v-for="(player, index) in $attrs.player" :key="index">
+                <div class="history-operate" v-if="playerList">
+                    <span v-for="(player, index) in playerList" :key="index">
                         <PlayerCard :player="player" :delay="$attrs.pingResult[index]"
                                     :in-game-id="index"
                         />
@@ -58,15 +58,23 @@ export default {
     data() {
         return {
             isRoomIdOK: false,
-            isUserReady: false,
-            isUserInRoom: false,
+            isUserInRoom: this.$store.state.isUserInRoom,
             roomId: this.$store.state.roomId,
             currentRoomId: '',
         }
     },
     computed: {
+        userInfo() {
+            return this.$store.state.userInfo
+        },
+        isUserReady() {
+            return this.$store.state.isUserReady
+        },
         game() {
             return this.$store.state.game
+        },
+        playerList() {
+            return this.$store.state.playerList
         },
     },
     watch: {
@@ -107,18 +115,34 @@ export default {
             this.currentRoomId = this.roomId
             this.isRoomIdOK = false
             this.isUserInRoom = true
+            this.$store.commit('updateIsUserInRoom', true)
         },
 
+        /**
+         * 玩家准备/取消准备
+         *
+         * @return void
+         * @author ChiyukiRuon
+         * */
         getReady() {
-            this.isUserReady = !this.isUserReady
+            this.$store.commit('updateIsUserReady', !this.isUserReady)
             this.$attrs.wss.send(JSON.stringify({
                 'type': 'ready',
                 'ready': this.isUserReady
             }))
-        }
+        },
     },
     mounted() {
-
+        if (!("Notification" in window)) {
+            console.warn("此浏览器不支持通知")
+        }else if (Notification.permission === 'default') {
+            // 检查并请求通知权限
+            Notification.requestPermission().then(function (permission) {
+                if (permission === 'granted') {
+                    new Notification("步步为营", { body: '浏览器通知测试' })
+                }
+            })
+        }
     }
 }
 </script>
