@@ -15,8 +15,8 @@
         <div class="player-status">
             <img src="../../src/assets/img/ready.png" v-if="player.ready && Object.keys(game).length === 0" alt="玩家准备">
             <img src="../../src/assets/img/offline.png" v-if="player.offline" alt="玩家掉线">
-            <img src="../../src/assets/img/thinking.gif" v-if="!player.offline && inGameId === game.current" alt="玩家思考中">
-            <div v-if="!player.ready && inGameId !== game.current && !player.offline" style="width: 28px"></div>
+            <img src="../../src/assets/img/thinking.gif" v-if="!player.offline && inGameId === current" alt="玩家思考中">
+            <div v-if="!player.ready && inGameId !== current && !player.offline" style="width: 28px"></div>
         </div>
     </div>
     <div v-else-if="size === 'mini'" style="display: flex; align-items: center;">
@@ -45,6 +45,9 @@ export default {
     computed: {
         game() {
             return this.$store.state.game;
+        },
+        current() {
+            return this.$store.state.currentPlayer
         }
     },
     data() {
@@ -53,10 +56,10 @@ export default {
         }
     },
     watch: {
-        'game.current': {
+        'current': {
             handler() {
                 if (this.size !== 'default') return
-                if (!this.player.offline && this.inGameId === this.game.current) {
+                if (!this.player.offline && this.inGameId === this.current) {
                     this.$refs['player-card'].style.border = '2px solid #67C23A'
                 }else {
                     this.$refs['player-card'].style.border = '2px solid rgba(0,0,0,0)'
@@ -66,7 +69,7 @@ export default {
         }
     },
     mounted() {
-        if (!this.player.offline && this.inGameId === this.game.current) {
+        if (this.size === 'default' && !this.player.offline && this.inGameId === this.current) {
             this.$refs['player-card'].style.border = '2px solid #67C23A'
         }
     }

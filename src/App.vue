@@ -89,6 +89,7 @@ export default {
                 if (this.wss === null) this.startWss()
             }
             this.showUserView = open
+            this.isTabVisible = !open
         },
 
         nextGame() {
@@ -103,98 +104,119 @@ export default {
          * @author ChiyukiRuon
          * */
         startWss() {
-            this.wss = new WebSocket('wss://xypp.cc:18541')
-            // this.wss = new WebSocket('ws://127.0.0.1:19981')
+            let connectAttempts = 0 // 连接尝试次数
+            const maxConnectAttempts = 3 // 最大连接尝试次数
+            const reconnectInterval = 5000 // 重连间隔（毫秒）
 
-            this.wss.onopen = () => {
-                console.info('WebSocket连接已建立')
-            }
+            const connect = () => {
+                if (connectAttempts > maxConnectAttempts) return
+                console.info('尝试连接WebSocket...')
+                this.wss = new WebSocket('wss://xypp.cc:18541')
+                // this.wss = new WebSocket('ws://127.0.0.1:19981')
 
-            this.wss.onmessage = (event) => {
-                // console.info('收到WebSocket消息：', JSON.parse(event.data))
-                const type = JSON.parse(event.data).type
-                switch (type) {
-                    case 'ping':
-                        this.wss.send(JSON.stringify(
-                            { 'type': 'pong' }
-                        ))
-                        break
-                    case 'pingResult':
-                        this.pingResult = JSON.parse(event.data).ping
-                        break
-                    case 'room':
-                        this.player = JSON.parse(event.data).player
+                this.wss.onopen = () => {
+                    console.info('WebSocket连接已建立')
+                    if (connectAttempts !== 0) this.$message.success('重连成功')
+                    this.$store.commit('updateConnectStatus', 1)
+                }
 
-                        this.player.forEach(player => {
-                            if (player.id === this.userInfo.id) {
-                                this.$store.commit('updateIsUserReady', player.ready)
+                this.wss.onmessage = (event) => {
+                    // console.info('收到WebSocket消息：', JSON.parse(event.data))
+                    const type = JSON.parse(event.data).type
+                    switch (type) {
+                        case 'ping':
+                            this.wss.send(JSON.stringify(
+                                { 'type': 'pong' }
+                            ))
+                            break
+                        case 'pingResult':
+                            this.pingResult = JSON.parse(event.data).ping
+                            break
+                        case 'room':
+                            this.player = JSON.parse(event.data).player
+
+                            this.player.forEach(player => {
+                                if (player.id === this.userInfo.id) {
+                                    this.$store.commit('updateIsUserReady', player.ready)
+                                }
+                            })
+
+                            this.$store.commit('updatePlayerList', this.player)
+                            break
+                        case 'start':
+                            this.game = JSON.parse(event.data).game
+                            this.player = JSON.parse(event.data).game.players
+
+                            this.$store.commit('updateGame', this.game)
+                            this.$store.commit('updatePlayerList', this.player)
+                            this.$store.commit('updateCurrentPlayer', this.game.current)
+                            this.$store.commit('updateIsUserInGame', true)
+                            break
+                        case 'stage':
+                            if (JSON.parse(event.data).lastOp.type === 'wall') {
+                                this.player[JSON.parse(event.data).lastOp.player].wallRest -= 1
+
+                                this.$store.commit('addInGameWall', JSON.parse(event.data).lastOp)
+                            }else if (JSON.parse(event.data).lastOp.type === 'chess') {
+                                this.$store.commit('changeInGameChess', JSON.parse(event.data).lastOp)
                             }
-                        })
+                            this.lastOp = JSON.parse(event.data).lastOp
+                            this.opHistoryList.push(this.lastOp)
 
-                        this.$store.commit('updatePlayerList', this.player)
-                        break
-                    case 'start':
-                        this.game = JSON.parse(event.data).game
-                        this.player = JSON.parse(event.data).game.players
+                            this.$store.commit('updateCurrentPlayer', JSON.parse(event.data).current)
+                            this.$store.commit('updateLastOp', this.lastOp)
+                            this.$store.commit('updatePlayerList', this.player)
+                            this.$store.commit('updateOpHistoryList', this.opHistoryList)
+                            break
+                        case 'won':
+                            this.winner = this.player[JSON.parse(event.data).player]
+                            this.rank = JSON.parse(event.data).rank
+                            this.gameOverDialog = true
+                            break
+                        case 'end':
+                            this.player = JSON.parse(event.data).players
+                            this.rank = JSON.parse(event.data).rank
+                            this.game = {}
 
-                        this.$store.commit('updateGame', this.game)
-                        this.$store.commit('updatePlayerList', this.player)
-                        break
-                    case 'stage':
-                        this.game.current = JSON.parse(event.data).current
-                        if (JSON.parse(event.data).lastOp.type === 'wall') {
-                            this.player[JSON.parse(event.data).lastOp.player].wallRest -= 1
-                            this.game.players[JSON.parse(event.data).lastOp.player].wallRest -= 1
-                        }
-                        this.lastOp = JSON.parse(event.data).lastOp
-                        this.opHistoryList.push(this.lastOp)
+                            this.$store.commit('gameOver')
+                            this.$store.commit('updatePlayerList', this.player)
+                            break
+                        case 'msg':
+                            this.$store.commit('addMsg', JSON.parse(event.data))
+                            break
+                        case 'fail':
+                            this.$message.error('非法操作')
+                            break
+                    }
+                }
 
-                        this.$store.commit('updateGame', this.game)
-                        this.$store.commit('updateLastOp', this.lastOp)
-                        this.$store.commit('updatePlayerList', this.player)
-                        this.$store.commit('updateOpHistoryList', this.opHistoryList)
-                        break
-                    case 'won':
-                        this.winner = this.player[JSON.parse(event.data).player]
-                        this.rank = JSON.parse(event.data).rank
-                        this.gameOverDialog = true
-                        break
-                    case 'end':
-                        this.player = JSON.parse(event.data).players
-                        this.rank = JSON.parse(event.data).rank
-                        this.game = {}
+                this.wss.onclose = () => {
+                    console.warn('WebSocket连接已断开')
+                    this.$store.commit('updateConnectStatus', 2)
+                    if (connectAttempts === 0) this.$message.warning(`WebSocket连接已断开, 将在 ${(reconnectInterval / 1000)} 秒后尝试重新连接...`)
 
-                        this.$store.commit('gameOver')
-                        break
-                    case 'msg':
-                        this.$store.commit('addMsg', JSON.parse(event.data))
-                        break
-                    case 'fail':
-                        this.$message.error('非法操作')
-                        break
+                    connectAttempts++ // 增加连接尝试次数
+                    if (connectAttempts <= maxConnectAttempts) {
+                        console.warn(`将在 ${(reconnectInterval / 1000)} 秒后尝试第 ${connectAttempts}/${maxConnectAttempts} 次重连`)
+                        setTimeout(() => {
+                            this.$store.commit('updateConnectStatus', 0)
+                            this.$message.warning(`尝试第 ${connectAttempts}/${maxConnectAttempts} 次重连`)
+                            connect()
+                        }, reconnectInterval)
+                    } else {
+                        this.$store.commit('updateConnectStatus', 2)
+                        this.$message.error('连接失败')
+                        console.error('已达到最大连接尝试次数，停止重新连接。')
+                    }
+                }
+
+                this.wss.onerror = (error) => {
+                    console.error('WebSocket错误：', error)
+                    // this.$message.error(`WebSocket错误：${error}`)
                 }
             }
 
-            this.wss.onclose = () => {
-                // this.ws = null
-                console.warn('WebSocket连接已关闭')
-                this.$message.warning('WebSocket连接已关闭')
-            }
-
-            this.wss.onerror = (error) => {
-                console.error('WebSocket错误：', error)
-                this.$message.error(`WebSocket错误：${error}`)
-            }
-        },
-
-        /**
-         * 重连
-         *
-         * @return void
-         * @author ChiyukiRuon
-         * */
-        reconnectWss() {
-            // TODO 断线重连
+            connect()
         },
 
         /**

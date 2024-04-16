@@ -44,8 +44,10 @@ import {
 export default {
     name: 'GameBoard',
     watch: {
+        /* game对象仅在游戏开始或结束时更新，监听game对象来初始化棋盘或重连时恢复棋盘 */
         'game': {
-            handler() {
+            handler(newVal, oldVal) {
+                console.log('game changed', newVal, oldVal)
                 if (Object.keys(this.game).length !== 0 && this.game.players[this.game.current].id === this.userInfo.id) {
                     this.$nextTick(() => {
                         const board = this.$refs.board
@@ -60,9 +62,9 @@ export default {
         },
         'game.chesses': {
             handler() {
+                console.log('game.chesses changed')
                 if (Object.keys(this.game).length === 0) {
                     this.status = {
-                        current: -1,
                         gameBoard: [],
                         playersPos: {},
                         playerPosXY: []
@@ -91,10 +93,15 @@ export default {
 
                     return
                 }
-                if (this.game.chesses) {
+                if (this.game.chesses.length !== 0) {
                     for (let i = 0; i < this.game.chesses.length; i++) {
-                        this.status.playerPosXY.push({start: this.game.chesses[i].position, position: []})
-                        this.updateChessPos(this.game.chesses[i].player, this.game.chesses[i].position, this.game.players[i])
+                        try {
+                            this.status.playerPosXY.push({start: this.game.chesses[i].position, position: []})
+                            this.updateChessPos(this.game.chesses[i].player, this.game.chesses[i].position, this.game.players[i])
+                        }catch (e) {
+                            console.error(e)
+                        }
+
                     }
                 }
             },
@@ -102,14 +109,13 @@ export default {
         },
         'game.walls': {
             handler() {
+                console.log('game.walls changed')
                 if (Object.keys(this.game).length === 0) {
                     const wall = document.getElementsByClassName('wall')
                     if (wall.length === 0) return
                     while (wall[0]) {
                         wall[0].classList.remove('wall')
                     }
-
-                    this.$store.commit('updateInGameWalls', [])
 
                     return
                 }
@@ -125,9 +131,10 @@ export default {
                 }
             }
         },
+        /* 在游戏进行中时所有的操作均通过lastOp来更新 */
         'lastOp': {
             handler(newVal) {
-                if (Object.keys(this.game).length !== 0 && this.game.players[this.game.current].id === this.userInfo.id) {
+                if (Object.keys(this.game).length !== 0 && this.game.players[this.current].id === this.userInfo.id) {
                     this.$nextTick(() => {
                         const board = this.$refs.board
                         if (board) {
@@ -166,8 +173,6 @@ export default {
                     }
 
                     this.status.gameBoard = updateWallInBoard(this.status.gameBoard, pos)
-
-                    this.$store.commit('addInGameWall', pos)
                 }
             },
             deep: true
@@ -183,9 +188,15 @@ export default {
         game() {
             return this.$store.state.game
         },
+        playerList() {
+            return this.$store.state.playerList
+        },
         lastOp() {
             return this.$store.state.lastOp
-        }
+        },
+        current() {
+            return this.$store.state.currentPlayer
+        },
     },
     data() {
         return {
@@ -213,7 +224,7 @@ export default {
             const currentSquare = this.$refs[[columnIndex, rowIndex]][0].children
 
             // 判断是否轮到当前玩家
-            if (this.userInfo.id !== this.game.players[this.game.current].id) return false
+            if (this.userInfo.id !== this.game.players[this.current].id) return false
 
             // 判断当前格子是否已经有棋子
             if (currentSquare.length === 1) {
@@ -234,7 +245,7 @@ export default {
                     if (this.$refs[[x, y]][0].children.length === 0) {
                         // 如果遇到空格，跳出循环继续检查下一个方向
                         break
-                    } else if (this.$refs[[x, y]][0].children[0] === this.status.playersPos[this.game.current]) {
+                    } else if (this.$refs[[x, y]][0].children[0] === this.status.playersPos[this.current]) {
                         // 如果遇到当前玩家的棋子，且中间没有墙则说明可以落子
                         return !isWallBetween(x, y, columnIndex, rowIndex, this.status.gameBoard);
                     } else {
@@ -259,9 +270,9 @@ export default {
                             bx = x + 1
                             by = y
                         }
-                        if (this.$refs[[ax, ay]] && this.$refs[[ax, ay]][0].children[0] === this.status.playersPos[this.game.current] && isWallBetween(bx, by, x, y, this.status.gameBoard)) {
+                        if (this.$refs[[ax, ay]] && this.$refs[[ax, ay]][0].children[0] === this.status.playersPos[this.current] && isWallBetween(bx, by, x, y, this.status.gameBoard)) {
                             if (!isWallBetween(columnIndex, rowIndex, x, y, this.status.gameBoard)) return true
-                        }else if (this.$refs[[bx, by]]  && this.$refs[[bx, by]][0].children[0] === this.status.playersPos[this.game.current] && isWallBetween(ax, ay, x, y, this.status.gameBoard)) {
+                        }else if (this.$refs[[bx, by]]  && this.$refs[[bx, by]][0].children[0] === this.status.playersPos[this.current] && isWallBetween(ax, ay, x, y, this.status.gameBoard)) {
                             if (!isWallBetween(columnIndex, rowIndex, x, y, this.status.gameBoard)) return true
                         }
 
@@ -292,10 +303,10 @@ export default {
                     chessDiv = document.createElement('div')
                     chessDiv.id = 'preview'
                     chessDiv.className = 'preview-chess'
-                    if (this.game.players[this.game.current].metadata.head === '') {
-                        chessDiv.innerText = this.game.players[this.game.current].name
+                    if (this.game.players[this.current].metadata.head === '') {
+                        chessDiv.innerText = this.game.players[this.current].name
                     }
-                    chessDiv.style.backgroundImage = `url('${this.game.players[this.game.current].metadata.head}')`
+                    chessDiv.style.backgroundImage = `url('${this.game.players[this.current].metadata.head}')`
                     container[0].appendChild(chessDiv)
                 }
             }
@@ -346,6 +357,12 @@ export default {
                     chessDiv.innerText = player.name
                 }
                 chessDiv.style.backgroundImage = `url('${player.metadata.head}')`
+                chessDiv.addEventListener('mouseenter', () => {
+                    this.showPlayerFinal(Number(chessDiv.id), true)
+                })
+                chessDiv.addEventListener('mouseleave', () => {
+                    this.showPlayerFinal(Number(chessDiv.id), false)
+                })
                 container[0].appendChild(chessDiv)
             }
 
@@ -364,7 +381,9 @@ export default {
          * */
         moveChess(x, y) {
             if (this.judgeChess(x, y)) {
-                this.updateChessPos(this.game.current, [x, y], this.game.players[this.game.current])
+                this.updateChessPos(this.current, [x, y], this.game.players[this.current])
+                const chess = {player: this.current, position: [x, y]}
+                this.$store.commit('changeInGameChess', chess)
 
                 this.$attrs.wss.send(JSON.stringify({
                     'type': 'chess',
@@ -385,7 +404,7 @@ export default {
         mouseOnGap(position, x, y) {
             const pos = calcWall(position, x, y)
 
-            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.game.current].id || this.game.players[this.game.current].wallRest <= 0) return
+            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.current].id || this.game.players[this.current].wallRest <= 0) return
             if (judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1], this.status.gameBoard)) {
                 if (isNoPathOut(this.status.playerPosXY, this.status.gameBoard, pos)) return
 
@@ -447,7 +466,7 @@ export default {
         setWall(position, x, y) {
             const pos = calcWall(position, x, y)
 
-            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.game.current].id || this.game.players[this.game.current].wallRest <= 0) return
+            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.current].id || this.game.players[this.current].wallRest <= 0) return
 
             if (judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1], this.status.gameBoard)) {
                 if (isNoPathOut(this.status.playerPosXY, this.status.gameBoard, pos)) return
@@ -502,7 +521,46 @@ export default {
             }
 
             this.status.gameBoard = updateWallInBoard(this.status.gameBoard, pos)
-        }
+        },
+
+        /**
+         * 显示玩家的终点区域
+         *
+         * @param {Number} id 玩家id
+         * @param {Boolean} mouseEnter 鼠标是否进入棋盘
+         * @return void
+         * @author ChiyukiRuon
+         * */
+        showPlayerFinal(id, mouseEnter) {
+            const start = this.game.players[id].startPosition
+            let finalSquares = []
+            if (start[0] === 0) {
+                for (let i = 0; i < 9; i++) {
+                    finalSquares.push(this.$refs[[8, i]][0])
+                }
+            }else if (start[1] === 0) {
+                for (let i = 0; i < 9; i++) {
+                    finalSquares.push(this.$refs[[i, 8]][0])
+                }
+            }else if (start[0] === 8) {
+                for (let i = 0; i < 9; i++) {
+                    finalSquares.push(this.$refs[[0, i]][0])
+                }
+            }else if (start[1] === 8) {
+                for (let i = 0; i < 9; i++) {
+                    finalSquares.push(this.$refs[[i, 0]][0])
+                }
+            }
+            if (mouseEnter) {
+                for (let i = 0; i < finalSquares.length; i++) {
+                    finalSquares[i].className = 'final-square'
+                }
+            }else {
+                for (let i = 0; i < finalSquares.length; i++) {
+                    finalSquares[i].className = 'cell'
+                }
+            }
+        },
     },
     created() {
         // 初始化棋盘每个位置上的状态
@@ -515,8 +573,7 @@ export default {
     },
     mounted() {
         if (Object.keys(this.game).length !== 0) {
-            if (this.game.players[this.game.current].id === this.userInfo.id) {
-                console.log('update board style')
+            if (this.game.players[this.current].id === this.userInfo.id) {
                 const board = this.$refs.board
                 if (board) {
                     board.style.boxShadow = '0 0 5px 0 rgba(179,225,157, 0.5) inset'
@@ -524,18 +581,19 @@ export default {
                 }
             }
 
-            if (this.game.chesses) {
-                for (let i = 0; i < this.game.chesses.length; i++) {
-                    this.status.playerPosXY.push({start: this.game.chesses[i].position, position: []})
-                    this.updateChessPos(this.game.chesses[i].player, this.game.chesses[i].position, this.game.players[i])
+            const chess = this.$store.state.inGameChess
+            if (chess.length !== 0) {
+                for (let i = 0; i < chess.length; i++) {
+                    this.status.playerPosXY.push({start: chess[i].position, position: []})
+                    this.updateChessPos(chess[i].player, chess[i].position, this.game.players[i])
                 }
             }
 
-            console.log(this.$store.status.inGameWalls)
-            if (this.game.walls.length !== 0) {
-                for (let i = 0; i < this.game.walls.length; i++) {
-                    const midpoints = [(this.game.walls[i].position[0][0] + this.game.walls[i].position[1][0]) / 2, (this.game.walls[i].position[0][1] + this.game.walls[i].position[1][1]) / 2]
-                    if (this.game.walls[i].position[1][0] === this.game.walls[i].position[0][0]) {
+            const walls = this.$store.state.inGameWalls
+            if (walls.length !== 0) {
+                for (let i = 0; i < walls.length; i++) {
+                    const midpoints = [(walls[i].position[0][0] + walls[i].position[1][0]) / 2, (walls[i].position[0][1] + walls[i].position[1][1]) / 2]
+                    if (walls[i].position[1][0] === walls[i].position[0][0]) {
                         this.reConnectSetWall('right', midpoints[0] - 1, midpoints[1] - 1)
                     } else {
                         this.reConnectSetWall('bottom', midpoints[0] - 1, midpoints[1])
@@ -544,9 +602,6 @@ export default {
             }
         }
     },
-    beforeUnmount() {
-        console.log('before unmount')
-    }
 }
 </script>
 
@@ -576,6 +631,7 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: background-color 0.5s;
 }
 
 .number {
@@ -634,6 +690,17 @@ export default {
     word-break: break-word;
     overflow: hidden;
     opacity: 0.5;
+}
+
+.final-square {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border-radius: 5px;
+    background-color: var(--square-color-final);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.5s;
 }
 
 .current-player {

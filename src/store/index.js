@@ -4,8 +4,11 @@ import { createStore } from 'vuex'
 export default createStore({
     state: {
         // 在这里定义你的状态
+        connectStatus: 0, //0 连接中, 1 已连接, 2 连接断开
         game: {},
+        inGameChess: [],
         inGameWalls: [],
+        currentPlayer: -1,
         lastOp: {},
         roomId: "",
         userInfo: {
@@ -20,77 +23,91 @@ export default createStore({
         enableNotify: false,
         isUserReady: false,
         isUserInRoom: false,
+        isUserInGame: false,
         opHistoryList: [],
         msgList: [],
         playerList: [],
     },
     mutations: {
         // 在这里定义同步修改状态的方法(mutations)
+        updateConnectStatus(state, connectStatus) {
+            state.connectStatus = connectStatus
+        },
+
         updateGame(state, game) {
-            state.game = game
-            // console.log('game updated', game)
+            state.game = JSON.parse(JSON.stringify(game))
+            state.inGameChess = JSON.parse(JSON.stringify(game)).chesses
+            state.inGameWalls = JSON.parse(JSON.stringify(game)).walls
+        },
+
+        updateInGameChess(state, inGameChess) {
+            state.inGameChess = inGameChess
+        },
+
+        changeInGameChess(state, chess) {
+            state.inGameChess[chess.player] = chess
         },
 
         updateInGameWalls(state, inGameWalls) {
             state.inGameWalls = inGameWalls
-            // console.log('inGameWalls updated', inGameWalls)
         },
 
         addInGameWall(state, newWall) {
             state.inGameWalls.push(newWall)
-            // console.log('inGameWalls updated', inGameWalls)
+        },
+
+        updateCurrentPlayer(state, currentPlayer) {
+            state.currentPlayer = currentPlayer
         },
 
         updateLastOp(state, lastOp) {
             state.lastOp = lastOp
-            // console.log('lastOp updated', lastOp)
         },
 
         updateRoomId(state, roomId) {
             state.roomId = roomId
-            // console.log('roomId updated', roomId)
         },
 
         updatePlayerList(state, playerList) {
             state.playerList = playerList
-            // console.log('playerList updated', playerList)
         },
 
         updateUserInfo(state, userInfo) {
             state.userInfo = userInfo
-            // console.log('userInfo updated', userInfo)
         },
 
         updateIsUserReady(state, isUserReady) {
             state.isUserReady = isUserReady
-            // console.log('isUserReady updated', isUserReady)
         },
 
         updateIsUserInRoom(state, isUserInRoom) {
             state.isUserInRoom = isUserInRoom
-            // console.log('isUserInRoom updated', isUserInRoom)
+        },
+
+        updateIsUserInGame(state, isUserInGame) {
+            state.isUserInGame = isUserInGame
         },
 
         updateEnableNotify(state, enableNotify) {
             state.enableNotify = enableNotify
-            // console.log('enableNotify updated', enableNotify)
         },
 
         updateOpHistoryList(state, opHistoryList) {
             state.opHistoryList = opHistoryList
-            // console.log('opHistoryList updated', opHistoryList)
         },
 
         addMsg(state, msgItem) {
             state.msgList.push(msgItem)
-            // console.log('msgList updated', msgItem)
         },
 
         gameOver(state) {
             state.game = {}
+            state.inGameChess = []
             state.inGameWalls = []
+            state.currentPlayer = -1
             state.lastOp = {}
             state.isUserReady = false
+            state.isUserInGame = false
             state.opHistoryList = []
         },
     },

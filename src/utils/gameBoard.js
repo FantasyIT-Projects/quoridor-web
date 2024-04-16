@@ -18,6 +18,7 @@ const CHESS_INITIAL_POS = [
  * @author ChiyukiRuon
  * */
 export function updateChessInBoard(id, board, newXY, oldXY) {
+    if (oldXY && oldXY[0] === newXY[0] && oldXY[1] === newXY[1]) return board
     const newX = newXY[0] * 2 + 1
     const newY = newXY[1] * 2 + 1
     let gameBoard = JSON.parse(JSON.stringify(board))
@@ -25,7 +26,11 @@ export function updateChessInBoard(id, board, newXY, oldXY) {
         const oldX = oldXY[0] * 2 + 1
         const oldY = oldXY[1] * 2 + 1
 
-        gameBoard[oldX][oldY] = -1
+        try {
+            gameBoard[oldX][oldY] = -1
+        }catch (e) {
+            console.error(e)
+        }
     }
 
     try {

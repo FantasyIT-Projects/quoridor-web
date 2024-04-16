@@ -8,7 +8,7 @@ import HistoryBox from '@/components/HistoryBox.vue'
 <template>
     <div class="header">
         <div class="user-card" @click.prevent="openUserView">
-            <el-avatar :src="userInfo.metadata.head" size="large" style="border: 2px solid #409EFF" >{{ userInfo.name }}</el-avatar>
+            <el-avatar :src="userInfo.metadata.head" size="large" class="avatar" style="" >{{ userInfo.name }}</el-avatar>
             <div style="margin-left: 20px">{{ $attrs.userInfo.name }}</div>
         </div>
         <div class="room-id">
@@ -64,6 +64,9 @@ export default {
         }
     },
     computed: {
+        connectStatus() {
+            return this.$store.state.connectStatus
+        },
         userInfo() {
             return this.$store.state.userInfo
         },
@@ -78,12 +81,38 @@ export default {
         },
     },
     watch: {
+        connectStatus(newVal) {
+            const avatar = document.querySelector('.avatar')
+            switch (newVal) {
+                case 0:
+                    // 连接中
+                    this.$nextTick(() => {
+                        avatar.style.animation = 'connecting 1.5s infinite alternate'
+                    })
+                    break
+                case 1:
+                    // 连接成功
+                    this.$nextTick(() => {
+                        avatar.style.animation = ''
+                        avatar.style.border = '2px solid #409EFF'
+                    })
+                    break
+                case 2:
+                    // 连接断开
+                    this.$nextTick(() => {
+                        avatar.style.animation = 'disconnected 0.5s infinite alternate'
+                    })
+                    break
+                default:
+                    break
+            }
+        },
         roomId(newVal) {
             this.isRoomIdOK = newVal !== this.currentRoomId && newVal.replace(/\s+/g, '').length > 0
         },
         game(newVal) {
             if (Object.keys(newVal).length === 0) {
-                this.isUserReady = false
+                this.$store.commit('updateIsUserReady', false)
             }
         },
     },
@@ -205,5 +234,32 @@ export default {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+}
+</style>
+<style>
+.avatar {
+    border: 2px solid #409EFF;
+}
+
+@keyframes connecting {
+    0% {
+        border: 2px solid rgba(255, 165, 0, 0.5);
+        box-shadow: 0 0 0 0 rgba(255, 165, 0, 0.3);
+    }
+    100% {
+        border: 2px solid rgba(255, 165, 0, 0.9);
+        box-shadow: 0 0 3px 3px rgba(255, 165, 0, 0.6);
+    }
+}
+
+@keyframes disconnected {
+    0% {
+        border: 2px solid rgba(245,108,108, 0.5);
+        box-shadow: 0 0 0 0 rgba(245,108,108, 0.3);
+    }
+    100% {
+        border: 2px solid rgba(245,108,108, 0.9);
+        box-shadow: 0 0 3px 3px rgba(245,108,108, 0.6);
+    }
 }
 </style>
