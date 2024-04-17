@@ -137,6 +137,7 @@ export default {
                     this.$store.commit('updateUserInfo', this.userInfo)
                     this.isGettingQQInfo = false
                     this.QQDialog = false
+                    this.openUserView()
                 }else {
                     this.$message.error('获取信息失败')
                 }
@@ -165,6 +166,7 @@ export default {
 
             localStorage.clear()
             this.$store.commit('updateUserInfo', this.userInfo)
+            this.isUsernameOK = true
         },
 
         /**

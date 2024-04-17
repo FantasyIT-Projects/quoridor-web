@@ -239,6 +239,17 @@ export default {
         },
     },
     mounted() {
+        if (!("Notification" in window)) {
+            console.warn("此浏览器不支持通知")
+        }else if (Notification.permission === 'default') {
+            // 检查并请求通知权限
+            Notification.requestPermission().then(function (permission) {
+                if (permission === 'granted') {
+                    new Notification("步步为营", { body: '浏览器通知测试' })
+                }
+            })
+        }
+
         if (localStorage.getItem('UserInfo')) {
             this.userInfo = JSON.parse(localStorage.getItem('UserInfo'))
             if (this.userInfo.id === '') this.userInfo.id = generateId(this.userInfo.name)
