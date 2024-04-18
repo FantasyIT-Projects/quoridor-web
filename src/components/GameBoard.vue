@@ -404,7 +404,7 @@ export default {
         mouseOnGap(position, x, y) {
             const pos = calcWall(position, x, y)
 
-            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.current].id || this.game.players[this.current].wallRest <= 0) return
+            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.current].id || this.playerList[this.current].wallRest <= 0) return
             if (judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1], this.status.gameBoard)) {
                 if (isNoPathOut(this.status.playerPosXY, this.status.gameBoard, pos)) return
 
@@ -466,7 +466,7 @@ export default {
         setWall(position, x, y) {
             const pos = calcWall(position, x, y)
 
-            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.current].id || this.game.players[this.current].wallRest <= 0) return
+            if (Object.keys(this.game).length === 0 || this.userInfo.id !== this.game.players[this.current].id || this.playerList[this.current].wallRest <= 0) return
 
             if (judgeWall(pos[0][0], pos[0][1], pos[1][0], pos[1][1], this.status.gameBoard)) {
                 if (isNoPathOut(this.status.playerPosXY, this.status.gameBoard, pos)) return

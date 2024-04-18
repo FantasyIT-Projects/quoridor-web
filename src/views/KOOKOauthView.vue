@@ -35,6 +35,10 @@ export default {
                     head: avatar
                 },
             }
+        },
+
+        openUserView() {
+            this.$emit('openUserView', false)
         }
     },
     mounted() {
@@ -52,7 +56,8 @@ export default {
                             }
                             this.isLoading = false
 
-                            router.push('/')
+                            this.openUserView()
+                            router.replace('/')
                       })
                 }else {
                     ElMessage.error('授权失败')

@@ -11,7 +11,7 @@
               @openUserView="openUserView"
     />
 
-    <router-view></router-view>
+    <router-view v-bind="$attrs" @openUserView="openUserView" ></router-view>
 
     <el-dialog title="游戏结束" v-model="gameOverDialog" :before-close="nextGame">
         <div style="display: flex; justify-content: center; flex-direction: column; align-items: center;">
