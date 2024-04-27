@@ -46,8 +46,7 @@ export default {
     watch: {
         /* game对象仅在游戏开始或结束时更新，监听game对象来初始化棋盘或重连时恢复棋盘 */
         'game': {
-            handler(newVal, oldVal) {
-                console.log('game changed', newVal, oldVal)
+            handler() {
                 if (Object.keys(this.game).length !== 0 && this.game.players[this.game.current].id === this.userInfo.id) {
                     this.$nextTick(() => {
                         const board = this.$refs.board
@@ -62,7 +61,7 @@ export default {
         },
         'game.chesses': {
             handler() {
-                console.log('game.chesses changed')
+                // console.log('game.chesses changed')
                 if (Object.keys(this.game).length === 0) {
                     this.status = {
                         gameBoard: [],
@@ -109,7 +108,7 @@ export default {
         },
         'game.walls': {
             handler() {
-                console.log('game.walls changed')
+                // console.log('game.walls changed')
                 if (Object.keys(this.game).length === 0) {
                     const wall = document.getElementsByClassName('wall')
                     if (wall.length === 0) return
@@ -345,8 +344,9 @@ export default {
                 this.status.gameBoard = updateChessInBoard(id, this.status.gameBoard, xy, this.status.playerPosXY[id].position)
             }else {
                 this.status.gameBoard = updateChessInBoard(id, this.status.gameBoard, xy)
-                this.status.playerPosXY[id].position = xy
             }
+
+            this.status.playerPosXY[id].position = xy
 
             if (container[0]) {
                 if (container[0].children.length !== 0) container[0].children[0].remove()
@@ -381,6 +381,8 @@ export default {
          * */
         moveChess(x, y) {
             if (this.judgeChess(x, y)) {
+                this.$store.commit('updateLocalLastOp', {type: 'chess', player: this.current, latestOp: [x, y], lastOp: this.status.playerPosXY[this.current].position})
+
                 this.updateChessPos(this.current, [x, y], this.game.players[this.current])
                 const chess = {player: this.current, position: [x, y]}
                 this.$store.commit('changeInGameChess', chess)
@@ -485,6 +487,8 @@ export default {
                     wall2.className = 'row-gap wall'
                 }
 
+                this.$store.commit('updateLocalLastOp', {type: 'wall', player: this.current, latestOp: pos, lastOp: JSON.parse(JSON.stringify(this.status.gameBoard))})
+
                 this.status.gameBoard = updateWallInBoard(this.status.gameBoard, pos)
 
                 this.$attrs.wss.send(JSON.stringify({
@@ -495,7 +499,7 @@ export default {
         },
 
         /**
-         * 建墙
+         * 重连时用于恢复棋盘上的墙
          *
          * @param {String} position 墙相对于棋子坐标系的位置
          * @param {Number} x X坐标
