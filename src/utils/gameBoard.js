@@ -1,11 +1,27 @@
 // 棋盘操作逻辑
-
+const COLUMN_NO = 'ABCDEFGHI'
 const CHESS_INITIAL_POS = [
     [4,0],
     [0,4],
     [4,8],
     [8,4],
 ]
+
+/**
+ * 将墙的坐标信息转换为文字信息
+ *
+ * @param {Array} startXY 起始坐标
+ * @param {Array} endXY 终止坐标
+ * @return {String} 墙的文字信息
+ * @author ChiyukiRuon
+ * */
+export function wallInfo(startXY, endXY) {
+    if (startXY[0] === endXY[0]) {
+        return `(${COLUMN_NO[startXY[0] - 1]}|${COLUMN_NO[endXY[0]]}), ${startXY[1] + 1} - ${endXY[1]}`
+    } else {
+        return `${COLUMN_NO[startXY[0]]} - ${COLUMN_NO[endXY[0] - 1]}, (${startXY[1]}|${endXY[1] + 1})`
+    }
+}
 
 /**
  * 更新棋子在棋盘操作数组中的位置

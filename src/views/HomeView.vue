@@ -11,21 +11,23 @@ import HistoryBox from '@/components/HistoryBox.vue'
             <el-avatar :src="userInfo.metadata.head" size="large" class="avatar" style="" >{{ userInfo.name }}</el-avatar>
             <div style="margin-left: 20px">{{ $attrs.userInfo.name }}</div>
         </div>
-        <div class="room-id">
-            <el-form inline>
-                <el-form-item label="房间号" style="margin: 0">
-                    <el-input v-model="roomId" :disabled="isUserInRoom" />
-                </el-form-item>
-                <el-button type="primary" style="margin-left: 10px"
-                           v-if="!isUserInRoom" :disabled="!isRoomIdOK"
-                           @click="joinRoom"
-                >加入房间
-                </el-button>
-            </el-form>
-        </div>
-        <div style="margin-left: 10px;" v-if="isUserInRoom && Object.keys(game).length === 0">
-            <el-button type="success" @click="getReady" v-if="!isUserReady">准备</el-button>
-            <el-button type="warning" @click="getReady" v-else>取消准备</el-button>
+        <div style="display: flex; align-items: center">
+            <div class="room-id">
+                <el-form inline>
+                    <el-form-item label="" style="margin: 0">
+                        <el-input v-model="roomId" placeholder="房间号" :disabled="isUserInRoom" />
+                    </el-form-item>
+                    <el-button type="primary" style="margin-left: 10px"
+                               v-if="!isUserInRoom" :disabled="!isRoomIdOK"
+                               @click="joinRoom"
+                    >加入房间
+                    </el-button>
+                </el-form>
+            </div>
+            <div style="margin-left: 10px;" v-if="isUserInRoom && Object.keys(game).length === 0">
+                <el-button type="success" @click="getReady" v-if="!isUserReady">准备</el-button>
+                <el-button type="warning" @click="getReady" v-else>取消准备</el-button>
+            </div>
         </div>
     </div>
     <div class="main">
@@ -169,11 +171,17 @@ export default {
 
 <style scoped>
 .header {
-    height: auto;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
+    @media (max-width: 650px) {
+
+    }
+
+    @media (min-width: 651px) {
+        height: auto;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+    }
 }
 
 .user-card {
@@ -188,7 +196,15 @@ export default {
 .room-id {
     display: flex;
     align-items: center;
-    margin-left: 20px;
+
+    @media (max-width: 650px) {
+        margin-top: 5px;
+        margin-bottom: 5px;
+    }
+
+    @media (min-width: 651px) {
+        margin-left: 20px;
+    }
 }
 
 .main {
