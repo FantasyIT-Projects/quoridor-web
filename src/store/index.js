@@ -26,6 +26,7 @@ export default createStore({
         isUserInRoom: false,
         isUserInGame: false,
         opHistoryList: [],
+        hasNewMsg: false,
         msgList: [],
         playerList: [],
     },
@@ -101,8 +102,13 @@ export default createStore({
             state.opHistoryList = opHistoryList
         },
 
+        updateHasNewMsg(state, hasNewMsg) {
+            state.hasNewMsg = hasNewMsg
+        },
+
         addMsg(state, msgItem) {
             state.msgList.push(msgItem)
+            state.hasNewMsg = true
         },
 
         gameOver(state) {

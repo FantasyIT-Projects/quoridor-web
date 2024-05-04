@@ -57,6 +57,11 @@ export default {
             rank: []
         }
     },
+    computed: {
+        isMobile() {
+            return this.$store.state.isMobile
+        }
+    },
     watch: {
         '$store.state.userInfo': {
             handler() {
