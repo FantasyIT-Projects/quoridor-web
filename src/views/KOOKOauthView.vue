@@ -43,11 +43,11 @@ export default {
     },
     mounted() {
         if (this.$route.query.code) {
-            axios.post(`https://bangumi-api.chiyukiruon.top/get_token?code=${this.$route.query.code}`).then(resp => {
-                if (!resp.data.code) {
-                    axios.post(`https://bangumi-api.chiyukiruon.top/get_user_info?access_token=${resp.data.access_token}`)
+            axios.get('https://api.chiyukiruon.top/bot/token', { params: { code: this.$route.query.code, redirect_uri: 'https://quoridor.chiyukiruon.top/oauth' } }).then(resp => {
+                if (!resp.data.data.code) {
+                    axios.get(`https://api.chiyukiruon.top/bot/user_info`, { params: { access_token: resp.data.data.access_token } })
                         .then(response => {
-                            if (response.data.code === 0) {
+                            if (response.data.data) {
                                 this.$store.commit('updateUserInfo', this.extractUserInfo(response.data.data))
                                 localStorage.setItem('UserInfo', JSON.stringify(this.extractUserInfo(response.data.data)))
                             } else {
@@ -61,9 +61,11 @@ export default {
                       })
                 }else {
                     ElMessage.error('授权失败')
+                    this.isLoading = false
                 }
-            }).catch(() => {
-                ElMessage.error('授权失败，code无效')
+            }).catch((error) => {
+                ElMessage.error(error.data.message || '授权失败，code无效')
+                this.isLoading = false
                 this.$router.push({
                     path: `/`,
                 })
