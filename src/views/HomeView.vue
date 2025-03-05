@@ -11,26 +11,28 @@ import HistoryBox from '@/components/HistoryBox.vue'
             <el-avatar :src="userInfo.metadata.head" size="large" class="avatar" style="" >{{ userInfo.name }}</el-avatar>
             <div style="margin-left: 20px">{{ $attrs.userInfo.name }}</div>
         </div>
-        <div class="room-id">
-            <el-form inline>
-                <el-form-item label="房间号" style="margin: 0">
-                    <el-input v-model="roomId" :disabled="isUserInRoom" />
-                </el-form-item>
-                <el-button type="primary" style="margin-left: 10px"
-                           v-if="!isUserInRoom" :disabled="!isRoomIdOK"
-                           @click="joinRoom"
-                >加入房间
-                </el-button>
-            </el-form>
-        </div>
-        <div style="margin-left: 10px;" v-if="isUserInRoom && Object.keys(game).length === 0">
-            <el-button type="success" @click="getReady" v-if="!isUserReady">准备</el-button>
-            <el-button type="warning" @click="getReady" v-else>取消准备</el-button>
+        <div style="display: flex; align-items: center">
+            <div class="room-id">
+                <el-form inline>
+                    <el-form-item label="" style="margin: 0">
+                        <el-input v-model="roomId" placeholder="房间号" :disabled="isUserInRoom" />
+                    </el-form-item>
+                    <el-button type="primary" style="margin-left: 10px"
+                               v-if="!isUserInRoom" :disabled="!isRoomIdOK"
+                               @click="joinRoom"
+                    >加入房间
+                    </el-button>
+                </el-form>
+            </div>
+            <div style="margin-left: 10px;" v-if="isUserInRoom && Object.keys(game).length === 0">
+                <el-button type="success" @click="getReady" v-if="!isUserReady">准备</el-button>
+                <el-button type="warning" @click="getReady" v-else>取消准备</el-button>
+            </div>
         </div>
     </div>
     <div class="main">
         <GameBoard v-bind="$attrs" />
-        <div class="side">
+        <div class="side" v-if="!isMobile">
             <div class="history">
                 <div class="player-list-title"><span>玩家列表 #{{ $store.state.roomId }}</span></div>
                 <div class="history-operate" v-if="playerList">
@@ -46,6 +48,34 @@ import HistoryBox from '@/components/HistoryBox.vue'
                 <ChatBox @send="$attrs.wss.send(JSON.stringify(Object.assign({type:'msg'},$event)))"/>
             </div>
         </div>
+        <div class="fixed-box" v-if="isMobile">
+            <el-popover
+                :visible="popoverHist"
+                :width="popoverWidth"
+            >
+                <template #reference>
+                    <div class="fixed-item fixed-btn" @click.prevent="showPopover('history')">
+                        <img class="fixed-btn" src="../assets/img/history.png" alt="fixed history button">
+                    </div>
+                </template>
+                <div>
+                    <HistoryBox />
+                </div>
+            </el-popover>
+            <el-popover
+                :visible="popoverChat"
+                :width="popoverWidth"
+            >
+                <template #reference>
+                    <div class="fixed-item fixed-btn" @click.prevent="showPopover('chat')">
+                        <el-badge is-dot :hidden="!hasNewMsg" style="display: flex; align-items: center; justify-content: center">
+                            <img class="fixed-btn" src="../assets/img/chat.png" alt="fixed chat button">
+                        </el-badge>
+                    </div>
+                </template>
+                <ChatBox @send="$attrs.wss.send(JSON.stringify(Object.assign({type:'msg'},$event)))"/>
+            </el-popover>
+        </div>
     </div>
 </template>
 
@@ -57,13 +87,22 @@ export default {
     name: 'HomeView',
     data() {
         return {
+            popoverHist: false,
+            popoverChat: false,
             isRoomIdOK: false,
             isUserInRoom: this.$store.state.isUserInRoom,
             roomId: this.$store.state.roomId,
             currentRoomId: '',
+            popoverWidth: Math.max(window.innerWidth - 100, 150)
         }
     },
     computed: {
+        isMobile() {
+            return this.$store.state.isMobile
+        },
+        hasNewMsg() {
+            return this.$store.state.hasNewMsg
+        },
         connectStatus() {
             return this.$store.state.connectStatus
         },
@@ -160,20 +199,56 @@ export default {
                 'ready': this.isUserReady
             }))
         },
+
+        /**
+         * 显示Popover
+         *
+         * @param {String} type 卡片类型
+         * @return void
+         * */
+        showPopover(type) {
+            switch (type) {
+                case 'history':
+                    this.popoverHist = !this.popoverHist
+                    this.popoverChat = false
+                    break
+                case 'chat':
+                    this.popoverChat = !this.popoverChat
+                    this.popoverHist = false
+                    break
+            }
+
+            if (this.popoverChat === false) this.$store.commit('updateHasNewMsg', false)
+        }
     },
     mounted() {
-
+        if (this.isMobile) {
+            window.addEventListener('click', (e) => {
+                if (e.target.className !== 'history-list' && e.target.className !== 'chat-list' && !e.target.className.split(' ').includes('fixed-btn')) {
+                    if (e.target.className.split(' ').includes('el-input__inner') || e.target.className.split(' ').includes('el-button')) return
+                    this.popoverChat = false
+                    this.popoverHist = false
+                    this.$store.commit('updateHasNewMsg', false)
+                }
+            })
+        }
     }
 }
 </script>
 
 <style scoped>
 .header {
-    height: auto;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
+    @media (max-width: 650px) {
+
+    }
+
+    @media (min-width: 651px) {
+        height: auto;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+    }
 }
 
 .user-card {
@@ -188,7 +263,15 @@ export default {
 .room-id {
     display: flex;
     align-items: center;
-    margin-left: 20px;
+
+    @media (max-width: 650px) {
+        margin-top: 5px;
+        margin-bottom: 5px;
+    }
+
+    @media (min-width: 651px) {
+        margin-left: 20px;
+    }
 }
 
 .main {
@@ -230,6 +313,29 @@ export default {
 <style>
 .avatar {
     border: 2px solid #409EFF;
+}
+
+.fixed-box {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    display: flex;
+}
+
+.fixed-item {
+    width: 30px;
+    height: 30px;
+    margin-right: 5px;
+    border-radius: 50px;
+    background-color: #FFFFFF;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.fixed-item img {
+    width: 20px;
 }
 
 @keyframes connecting {

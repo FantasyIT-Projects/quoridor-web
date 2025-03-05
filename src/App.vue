@@ -27,6 +27,7 @@
 import UserView from '@/views/UserView.vue'
 import { generateId } from '@/utils/user.js'
 import HomeView from '@/views/HomeView.vue'
+import { isMobileDevice } from '@/utils/device.js'
 
 export default {
     components: { HomeView, UserView },
@@ -54,6 +55,11 @@ export default {
             opHistoryList: [],
             winner: {},
             rank: []
+        }
+    },
+    computed: {
+        isMobile() {
+            return this.$store.state.isMobile
         }
     },
     watch: {
@@ -239,6 +245,8 @@ export default {
         },
     },
     mounted() {
+        this.$store.commit('updateIsMobile', isMobileDevice())
+
         if (!("Notification" in window)) {
             console.warn("此浏览器不支持通知")
         }else if (Notification.permission === 'default') {

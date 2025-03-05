@@ -5,7 +5,7 @@
             <div class="history-operate" v-for="(lastOp, index) in opHistoryList" :key="index">
                 <PlayerCard size="mini" :player="game.players[lastOp.player]" />
                 <span v-if="lastOp.type === 'chess'">于 {{ columnNo[lastOp.position[0][0]] }}{{ lastOp.position[0][1] + 1 }} 落子</span>
-                <span v-else-if="lastOp.type === 'wall'">于 {{ lastOp.position }} 放置了 {{ lastOp.direction }} 墙</span>
+                <span v-else-if="lastOp.type === 'wall'">于 {{ wallInfo(lastOp.position[0], lastOp.position[1]) }} 放置了 墙</span>
             </div>
         </div>
     </div>
@@ -13,9 +13,11 @@
 
 <script>
 import PlayerCard from '@/components/PlayerCard.vue'
+import { wallInfo } from '../utils/gameBoard.js'
 
 export default {
     name: 'HistoryBox',
+    methods: { wallInfo },
     components: { PlayerCard },
     computed: {
         game() {

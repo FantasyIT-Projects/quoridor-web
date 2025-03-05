@@ -4,6 +4,7 @@ import { createStore } from 'vuex'
 export default createStore({
     state: {
         // 在这里定义你的状态
+        isMobile: false,
         connectStatus: 0, //0 连接中, 1 已连接, 2 连接断开
         game: {},
         inGameChess: [],
@@ -25,11 +26,16 @@ export default createStore({
         isUserInRoom: false,
         isUserInGame: false,
         opHistoryList: [],
+        hasNewMsg: false,
         msgList: [],
         playerList: [],
     },
     mutations: {
         // 在这里定义同步修改状态的方法(mutations)
+        updateIsMobile(state, isMobile) {
+            state.isMobile = isMobile
+        },
+
         updateConnectStatus(state, connectStatus) {
             state.connectStatus = connectStatus
         },
@@ -96,8 +102,13 @@ export default createStore({
             state.opHistoryList = opHistoryList
         },
 
+        updateHasNewMsg(state, hasNewMsg) {
+            state.hasNewMsg = hasNewMsg
+        },
+
         addMsg(state, msgItem) {
             state.msgList.push(msgItem)
+            state.hasNewMsg = true
         },
 
         gameOver(state) {

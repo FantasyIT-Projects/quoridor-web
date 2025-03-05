@@ -1,24 +1,27 @@
 <template>
+<!--    <div class="board-mask"></div>-->
     <div class="board" ref="board">
         <div v-for="row in 9" :key="row" class="row">
             <div v-for="column in 9" :key="column" class="column">
                 <div style="display: flex;">
                     <div v-if="column === 1" class="number">{{ 10 - row }}</div>
+<!--                    <div class="board-mask"></div>-->
                     <div class="cell" :ref="(column - 1) + ',' + (9 - row)"
-                        @click.prevent="moveChess(column - 1, 9 - row)" @mouseover="mouseOnSquare(column - 1, 9 - row)"
-                        @mouseleave="mouseLeaveSquare(column - 1, 9 - row)"></div>
+                         @click.prevent="(e) => changeConfirmText(e,`于${columnNo[column - 1]}${10 - row}落子`, [(column - 1), (9 - row)])"
+                         @mouseover="mouseOnSquare(column - 1, 9 - row)"
+                         @mouseleave="mouseLeaveSquare(column - 1, 9 - row)"></div>
                     <div class="column-gap" v-if="column !== 9"
                         :ref="(column) + ',' + (9 - row) + 'to' + (column) + ',' + (10 - row)"
                         @mouseover="mouseOnGap('right', column - 1, 9 - row)"
                         @mouseleave="mouseLeaveGap('right', column - 1, 9 - row)"
-                        @click.prevent="setWall('right', column - 1, 9 - row)"></div>
+                        @click.prevent="(e) => changeConfirmText(e, `纵向放墙操作`, [column - 1, 9 - row], 'right')"></div>
                 </div>
                 <div style="display: flex; justify-content: flex-end">
                     <div class="row-gap" v-if="row !== 9"
                         :ref="(column - 1) + ',' + (9 - row) + 'to' + (column) + ',' + (9 - row)"
                         @mouseover="mouseOnGap('bottom', column - 1, 9 - row)"
                         @mouseleave="mouseLeaveGap('bottom', column - 1, 9 - row)"
-                        @click.prevent="setWall('bottom', column - 1, 9 - row)"></div>
+                        @click.prevent="(e) => changeConfirmText(e, `横向放墙操作`, [column - 1, 9 - row], 'bottom')"></div>
                     <div class="cross" v-if="row !== 9 && column !== 9" :ref="'cross' + (column) + ',' + (9 - row)">
                     </div>
                 </div>
@@ -28,6 +31,21 @@
             columnNo[column - 1] }}</div>
             </div>
         </div>
+
+        <el-popover
+            ref="popoverRef"
+            title=""
+            :virtual-ref="previewRef"
+            :visible="popoverVisible"
+            virtual-triggering
+            persistent
+        >
+            <span>{{ confirmText }}</span>
+            <div style="display: flex; justify-items: flex-end;">
+                <el-button size="small" @click="popoverVisible = false">取消</el-button>
+                <el-button type="primary" size="small" @click="confirmOperate">确定</el-button>
+            </div>
+        </el-popover>
     </div>
 </template>
 
@@ -181,6 +199,9 @@ export default {
 
     },
     computed: {
+        isMobile() {
+            return this.$store.state.isMobile
+        },
         userInfo() {
             return this.$store.state.userInfo
         },
@@ -199,16 +220,76 @@ export default {
     },
     data() {
         return {
+            popoverVisible: false,
             columnNo: 'ABCDEFGHI',
+            previewRef: '',
+            confirmText: '',
+            confirmOp: {},
             status: {
                 gameBoard: [],
                 playersPos: {},
                 playerPosXY: [],
             },
-
         }
     },
     methods: {
+        /**
+         * 改变确认弹窗文本
+         *
+         * @param {Event} e 事件
+         * @param {String} text 弹窗文本
+         * @param {Array} xy 坐标1
+         * @param {String} [position] 位置
+         * @return void
+         * @author ChiyukiRuon
+         * */
+        changeConfirmText(e, text, xy, position) {
+            if (!this.isMobile) {
+                if (!position) {
+                    this.moveChess(xy[0], xy[1])
+                } else {
+                    this.setWall(position, xy[0], xy[1])
+                }
+            } else {
+                this.confirmText = text
+                if (e.target) this.previewRef = e.target
+
+                if (!position) {
+                    if (this.judgeChess(xy[0], xy[1])) {
+                        this.popoverVisible = true
+                        this.confirmOp = { type: 'chess', xy: xy}
+                    } else {
+                        this.popoverVisible = false
+                    }
+                } else {
+                    const xys = calcWall(position, xy[0], xy[1])
+                    if (judgeWall(xys[0][0], xys[0][1], xys[1][0], xys[1][1], this.status.gameBoard)) {
+                        this.popoverVisible = true
+                        this.confirmOp = { type: 'wall', xy: xy, position: position}
+                    } else {
+                        this.popoverVisible = false
+                    }
+                }
+            }
+        },
+
+        /**
+         * 二次确认后执行操作
+         *
+         * @return void
+         * @author ChiyukiRuon
+         * */
+        confirmOperate() {
+            if (this.confirmOp.type === 'chess') {
+                this.moveChess(this.confirmOp.xy[0], this.confirmOp.xy[1])
+                this.previewRef = this.$refs[this.confirmOp.xy][0]
+            } else {
+                this.setWall(this.confirmOp.position, this.confirmOp.xy[0], this.confirmOp.xy[1])
+            }
+
+            this.popoverVisible = false
+        },
+
         /**
          * 判断当前格子是否能够落子
          *
@@ -381,7 +462,7 @@ export default {
          * */
         moveChess(x, y) {
             if (this.judgeChess(x, y)) {
-                this.$store.commit('updateLocalLastOp', {type: 'chess', player: this.current, latestOp: [x, y], lastOp: this.status.playerPosXY[this.current].position})
+                this.previewRef = `${x},${y}`
 
                 this.updateChessPos(this.current, [x, y], this.game.players[this.current])
                 const chess = {player: this.current, position: [x, y]}
@@ -486,8 +567,6 @@ export default {
                     wall1.className = 'row-gap wall'
                     wall2.className = 'row-gap wall'
                 }
-
-                this.$store.commit('updateLocalLastOp', {type: 'wall', player: this.current, latestOp: pos, lastOp: JSON.parse(JSON.stringify(this.status.gameBoard))})
 
                 this.status.gameBoard = updateWallInBoard(this.status.gameBoard, pos)
 
@@ -610,8 +689,17 @@ export default {
 </script>
 
 <style scoped>
+.board-mask {
+    position: absolute;
+    width: 100%;
+    max-width: 60px;
+    height: 60px;
+    border: 1px solid;
+}
+
 .board {
     width: 605px;
+    height: 620px;
     padding: 20px;
     border-radius: 20px;
     background-color: var(--border-bg-color);
