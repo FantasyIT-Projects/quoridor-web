@@ -3,19 +3,22 @@ import GameBoard from '@/components/GameBoard.vue'
 import PlayerCard from '@/components/PlayerCard.vue'
 import ChatBox from '@/components/ChatBox.vue'
 import HistoryBox from '@/components/HistoryBox.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 </script>
 
 <template>
     <div class="header">
         <div class="user-card" @click.prevent="openUserView">
-            <el-avatar
-                :src="userInfo.metadata.head"
-                size="large"
-                class="avatar"
-                @error="onAvatarError"
-            >
-                {{ userInfo.name }}
-            </el-avatar>
+<!--            <img-->
+<!--                v-if="showUserAvatar"-->
+<!--                :src="userInfo.metadata.head"-->
+<!--                size="large"-->
+<!--                class="avatar"-->
+<!--                :onerror="onAvatarError"-->
+<!--                alt="Avatar"-->
+<!--            />-->
+<!--            <div v-else class="avatar">{{ userInfo.name }}</div>-->
+            <user-avatar :user-info="userInfo" />
             <div style="margin-left: 20px">{{ $attrs.userInfo.name }}</div>
         </div>
         <div style="display: flex; align-items: center">
@@ -337,6 +340,9 @@ export default {
 <style>
 .avatar {
     border: 2px solid #409EFF;
+    border-radius: 50px;
+    width: 50px;
+    height: 50px;
 }
 
 .fixed-box {
