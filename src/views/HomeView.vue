@@ -8,7 +8,14 @@ import HistoryBox from '@/components/HistoryBox.vue'
 <template>
     <div class="header">
         <div class="user-card" @click.prevent="openUserView">
-            <el-avatar :src="userInfo.metadata.head" size="large" class="avatar" style="" >{{ userInfo.name }}</el-avatar>
+            <el-avatar
+                :src="userInfo.metadata.head"
+                size="large"
+                class="avatar"
+                @error="onAvatarError"
+            >
+                {{ userInfo.name }}
+            </el-avatar>
             <div style="margin-left: 20px">{{ $attrs.userInfo.name }}</div>
         </div>
         <div style="display: flex; align-items: center">
@@ -156,6 +163,23 @@ export default {
         },
     },
     methods: {
+        onAvatarError(e) {
+            const img = e.target;
+            const original = this.userInfo.metadata.head;
+            if (!original.includes('googleusercontent.com') || original.includes('gavatar.chiyukiruon.com')) return;
+            img.src = `https://gavatar.chiyukiruon.com/?url=${encodeURIComponent(original)}`;
+        },
+
+        async checkAvatar(url) {
+            try {
+                const res = await fetch(url, { method: 'HEAD' });
+                if (!res.ok) throw new Error();
+                return url;
+            } catch {
+                return `https://gavatar.chiyukiruon.com/?url=${encodeURIComponent(url)}`;
+            }
+        },
+
         /**
          * 打开用户信息页面
          *

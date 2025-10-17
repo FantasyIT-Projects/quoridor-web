@@ -11,18 +11,31 @@
         </el-form-item>
     </el-form>
     <div class="oauth">
+        <!-- KOOK 登录 -->
         <el-tooltip effect="dark" content="使用KOOK信息" placement="bottom">
             <img src="/kook.png" alt="使用KOOK信息"
                  style="width: 40px; margin: 1px; border-radius: 100%"
                  @click.prevent="loginWithKook"
             >
         </el-tooltip>
+
+        <!-- Google 登录 -->
+        <el-tooltip effect="dark" content="使用Google信息" placement="bottom">
+            <img src="/google.png" alt="使用Google信息"
+                 style="width: 35px; height: 35px; margin-top: 5px; margin-left: 10px; border-radius: 100%"
+                 @click.prevent="loginWithGoogle"
+            >
+        </el-tooltip>
+
+        <!-- QQ 登录 -->
         <el-tooltip effect="dark" content="使用QQ信息" placement="bottom">
             <img src="/qq.png" alt="使用QQ信息"
                  style="width: 42px; margin-left: 10px;"
                  @click.prevent="QQDialog = true"
             >
         </el-tooltip>
+
+        <!-- 清除用户数据 -->
         <el-tooltip effect="dark" content="清除用户数据" placement="bottom">
             <img src="../../src/assets/img/delete.png" alt="清除用户数据"
                  style="width: 42px; margin-left: 10px;"
@@ -30,10 +43,12 @@
             >
         </el-tooltip>
     </div>
+
     <div class="button">
         <el-button type="primary" :disabled="isUsernameOK" @click="openUserView">确定</el-button>
     </div>
 
+    <!-- QQ 获取信息对话框 -->
     <el-dialog
         v-model="QQDialog"
         title="获取QQ信息"
@@ -100,31 +115,37 @@ export default {
     methods: {
         /**
          * 检测用户名合法性
-         *
-         * @return void
-         * @author ChiyukiRuon
-         * */
+         */
         checkUsername() {
             this.isUsernameOK = !(this.userInfo.name.replace(/\s+/g, "").length > 0)
         },
 
         /**
          * 使用KOOK登录
-         *
-         * @return void
-         * @author ChiyukiRuon
-         * */
+         */
         loginWithKook() {
             window.location.href = 'https://www.kookapp.cn/app/oauth2/authorize?id=24532&client_id=XG7IAyXh63KhEYAE&redirect_uri=https%3A%2F%2Fquoridor.chiyukiruon.top%2Foauth&response_type=code&scope=get_user_info'
         },
 
         /**
-         * 从QQ获取用户信息
-         *
-         * @param {String} qq QQ号
-         * @return void
-         * @author ChiyukiRuon
-         * */
+         * 使用Google登录
+         */
+        loginWithGoogle() {
+            /* global google */
+            const client = google.accounts.oauth2.initTokenClient({
+                client_id: '292706659748-rnhd48f440th8o9vp5fsav4tndcs9qvn.apps.googleusercontent.com',
+                scope: 'openid profile',
+                callback: (response) => {
+                    const accessToken = response.access_token
+                    this.fetchGoogleUserInfo(accessToken)
+                },
+            })
+            client.requestAccessToken()
+        },
+
+        /**
+         * 使用QQ号获取信息
+         */
         getUserInfoFromQQ(qq) {
             this.isGettingQQInfo = true
             axios.get(`https://api.qjqq.cn/api/qqinfo?qq=${qq}`).then(res => {
@@ -138,32 +159,60 @@ export default {
                     this.isGettingQQInfo = false
                     this.QQDialog = false
                     this.openUserView()
-                }else {
+                } else {
                     this.$message.error('获取信息失败')
+                    this.isGettingQQInfo = false
                 }
             }).catch(error => {
-                this.$message.error(error.response.data.error)
+                this.$message.error(error.message)
                 this.isGettingQQInfo = false
             })
         },
 
         /**
-         * 清除本地的用户数据
-         *
-         * @return void
-         * @author ChiyukiRuon
-         * */
+         * 获取Google用户信息
+         */
+        async fetchGoogleUserInfo(token) {
+            try {
+                const res = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${token}` }
+                })
+                const data = res.data
+                this.userInfo.name = data.name
+                this.userInfo.metadata.head = data.picture
+                this.userInfo.id = generateId(data.email || data.sub)
+
+                localStorage.setItem('UserInfo', JSON.stringify(this.userInfo))
+                this.$store.commit('updateUserInfo', this.userInfo)
+                this.$message.success('Google 登录成功')
+                this.openUserView()
+            } catch (e) {
+                console.error(e)
+                this.$message.error('获取 Google 用户信息失败')
+            }
+        },
+
+        async checkAvatar(url) {
+            try {
+                const res = await fetch(url, { method: 'HEAD' });
+                if (!res.ok) throw new Error();
+                return url;
+            } catch {
+                return `https://gavatar.chiyukiruon.com/?url=${encodeURIComponent(url)}`;
+            }
+        },
+
+        /**
+         * 清除用户数据
+         */
         clearUserInfo() {
             this.userInfo = {
                 name: "",
                 id: "",
                 ready: false,
                 offline: false,
-                metadata: {
-                    head: ""
-                },
+                metadata: { head: "" },
             }
-
             localStorage.clear()
             this.$store.commit('updateUserInfo', this.userInfo)
             this.isUsernameOK = true
@@ -171,10 +220,7 @@ export default {
 
         /**
          * 关闭用户信息页面
-         *
-         * @return void
-         * @author ChiyukiRuon
-         * */
+         */
         openUserView() {
             if (this.userInfo.id === '') {
                 this.userInfo.id = generateId(this.userInfo.name)
@@ -182,14 +228,16 @@ export default {
 
             localStorage.setItem('UserInfo', JSON.stringify(this.userInfo))
             this.$store.commit('updateUserInfo', this.userInfo)
-
             this.$emit('openUserView', false)
         }
     },
     mounted() {
         if (localStorage.getItem("UserInfo")) {
             this.userInfo = JSON.parse(localStorage.getItem("UserInfo"))
-        }else {
+            this.checkAvatar(this.userInfo.metadata.head).then(url => {
+                this.userInfo.metadata.head = url
+            })
+        } else {
             this.checkUsername()
         }
     }
