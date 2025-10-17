@@ -193,6 +193,7 @@ export default {
         },
 
         async checkAvatar(url) {
+            if (!url.includes('googleusercontent.com' || url.includes('gavatar.chiyukiruon.com'))) return url;
             try {
                 const res = await fetch(url, { method: 'HEAD' });
                 if (!res.ok) throw new Error();
